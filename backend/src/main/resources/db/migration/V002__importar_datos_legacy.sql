@@ -1,0 +1,10 @@
+-- La importación real se ha ejecutado sobre data/tareas-dev.db.
+-- Este fichero documenta las decisiones de transformación desde tareas.db:
+-- 1) t_* se renombran sin prefijo.
+-- 2) fechas yyyyMMdd pasan a ISO-8601.
+-- 3) S/N pasa a booleano 1/0.
+-- 4) estado e estado_previo se eliminan de imputacion.
+-- 5) todas las imputaciones antiguas se importan con estado_horas PENDIENTE.
+-- 6) se crea un registro inicial en peticion_estado por cada petición.
+-- 7) fichero de documento se separa en nombre y ruta.
+-- 8) se eliminan las tablas tt_*.
