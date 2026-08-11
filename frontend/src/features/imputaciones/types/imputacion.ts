@@ -1,0 +1,1 @@
+export interface Imputacion { id:number|string; peticionId:number|string; peticionCodigo?:string; usuarioId:number|string; usuarioNombre?:string; fecha:string; horas:number; extra:boolean; estadoHorasId:number|string; estadoHorasNombre?:string; descripcion?:string; fechaAlta?:string }

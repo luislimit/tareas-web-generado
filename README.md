@@ -23,8 +23,8 @@ mvn spring-boot:run
 
 La aplicación resuelve de forma explícita la base situada en `../data/tareas-dev.db`.
 
-- API: `http://localhost:8080/api/categorias`
-- Swagger: `http://localhost:8080/swagger-ui.html`
+- API: `http://localhost:8081/api/categorias`
+- Swagger: `http://localhost:8081/swagger-ui.html`
 
 ## Correspondencia SQLite/JPA
 

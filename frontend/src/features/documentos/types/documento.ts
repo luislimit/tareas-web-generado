@@ -1,0 +1,1 @@
+export interface Documento { id:number|string; peticionId:number|string; peticionCodigo?:string; tipoDocumentoId:number|string; tipoDocumentoNombre?:string; nombre:string; ruta:string; descripcion?:string; fechaAlta?:string; usuarioId:number|string; usuarioNombre?:string }
