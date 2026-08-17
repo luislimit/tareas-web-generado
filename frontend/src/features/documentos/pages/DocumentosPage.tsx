@@ -3,6 +3,7 @@ import type { GridColDef } from '@mui/x-data-grid'
 import { useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useCurrentUser } from '../../../app/currentUser'
+import { useUserStoredState } from '../../../hooks/useUserPagePreferences'
 import { AppIcon } from '../../../components/common/AppIcon'
 import { MasterCrudPage, type CrudCreatePreset } from '../../../components/forms/MasterCrudPage'
 import { BusinessEntityFiltersWithPetitions, type EstadoActividadFiltro } from '../../../components/filters/BusinessEntityFilters'
@@ -31,14 +32,14 @@ export function DocumentosPage(){
  const { currentUserId } = useCurrentUser()
  const location=useLocation()
  const quickState=(location.state??{}) as QuickCreateState
- const [actividadFiltro,setActividadFiltro]=useState<EstadoActividadFiltro>('activas')
- const [categoriasFiltro,setCategoriasFiltro]=useState<string[]>([])
- const [subcategoriasFiltro,setSubcategoriasFiltro]=useState<string[]>([])
- const [estadosPeticionFiltro,setEstadosPeticionFiltro]=useState<string[]|null>(null)
- const [peticionesFiltro,setPeticionesFiltro]=useState<string[]>([])
- const [periodo,setPeriodo]=useState<DatePeriod>('todas')
- const [desde,setDesde]=useState('')
- const [hasta,setHasta]=useState('')
+ const [actividadFiltro,setActividadFiltro]=useUserStoredState<EstadoActividadFiltro>(currentUserId,'documentos','actividad','activas')
+ const [categoriasFiltro,setCategoriasFiltro]=useUserStoredState<string[]>(currentUserId,'documentos','categorias',[])
+ const [subcategoriasFiltro,setSubcategoriasFiltro]=useUserStoredState<string[]>(currentUserId,'documentos','subcategorias',[])
+ const [estadosPeticionFiltro,setEstadosPeticionFiltro]=useUserStoredState<string[]|null>(currentUserId,'documentos','estadosPeticion',null)
+ const [peticionesFiltro,setPeticionesFiltro]=useUserStoredState<string[]>(currentUserId,'documentos','peticiones',[])
+ const [periodo,setPeriodo]=useUserStoredState<DatePeriod>(currentUserId,'documentos','periodoFecha','todas')
+ const [desde,setDesde]=useUserStoredState<string>(currentUserId,'documentos','fechaDesde','')
+ const [hasta,setHasta]=useUserStoredState<string>(currentUserId,'documentos','fechaHasta','')
  const [imputacionInfo,setImputacionInfo]=useState<Imputacion|null>(null)
  const exportRowsRef=useRef<Documento[]>([])
 
@@ -147,9 +148,10 @@ export function DocumentosPage(){
     {name:'tipoDocumentoId',label:'Tipo documento',type:'select',required:true,options:tipoOpts},
     {name:'usuarioId',label:'Usuario',type:'select',required:true,options:userOpts},
     {name:'nombre',label:'Fichero',required:true,fileDrop:true},
-    {name:'descripcion',label:'Descripción',expandText:true}
+    {name:'descripcion',label:'Descripción',expanding:true}
    ]}
    toForm={r=>{const peticion=(pq.data??[]).find(p=>String(p.id)===String(r?.peticionId??''));return {categoriaId:peticion?.categoriaId??'',subcategoriaId:peticion?.subcategoriaId??'',peticionId:r?.peticionId??'',tipoDocumentoId:r?.tipoDocumentoId??'',usuarioId:r?.usuarioId??currentUserId,nombre:r?.nombre??'',descripcion:r?.descripcion??'',imputacionId:r?.imputacionId??quickState.imputacionId??''}}}
+   toDuplicateForm={r=>{const peticion=(pq.data??[]).find(p=>String(p.id)===String(r.peticionId??''));return {categoriaId:peticion?.categoriaId??'',subcategoriaId:peticion?.subcategoriaId??'',peticionId:r.peticionId??'',tipoDocumentoId:r.tipoDocumentoId??'',usuarioId:r.usuarioId??currentUserId,nombre:'',descripcion:r.descripcion??'',imputacionId:r.imputacionId??''}}}
    toPayload={f=>({peticionId:Number(f.peticionId),tipoDocumentoId:Number(f.tipoDocumentoId),nombre:f.nombre,descripcion:f.descripcion,usuarioId:Number(f.usuarioId),imputacionId:f.imputacionId===''?null:Number(f.imputacionId)})}
   />
   <ImputacionInfoDrawer open={Boolean(imputacionInfo)} imputacion={imputacionInfo} onClose={()=>setImputacionInfo(null)}/>

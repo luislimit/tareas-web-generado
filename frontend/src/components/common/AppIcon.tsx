@@ -3,7 +3,7 @@ import { SvgIcon, type SvgIconProps } from '@mui/material'
 export type AppIconName =
   | 'home' | 'tasks' | 'time' | 'book' | 'tools' | 'settings'
   | 'category' | 'subcategory' | 'state' | 'stateTime' | 'users' | 'documentType'
-  | 'edit' | 'delete' | 'changeState' | 'history' | 'add' | 'close'
+  | 'edit' | 'duplicate' | 'delete' | 'changeState' | 'history' | 'add' | 'close'
   | 'chevronLeft' | 'chevronRight' | 'chevronUp' | 'chevronDown'
   | 'pending' | 'inProgress' | 'calendarWeek' | 'calendarMonth' | 'warning' | 'user'
   | 'addTime' | 'addDocument' | 'link' | 'info' | 'hourType' | 'export' | 'open' | 'excel' | 'newDocument' | 'clearFilters' | 'documentEmpty' | 'documentFilled'
@@ -38,6 +38,8 @@ export function AppIcon({ name, ...props }: Props) {
       return <SvgIcon {...props}><path d="M5 2h9l5 5v15H5V2Zm2 2v16h10V8h-4V4H7Zm8 .8V6h1.2L15 4.8ZM9 11h6v2H9v-2Zm0 4h6v2H9v-2Z"/></SvgIcon>
     case 'edit':
       return <SvgIcon {...props}><path d="m4 16.5-.8 4.3 4.3-.8L18.8 8.7l-3.5-3.5L4 16.5Zm12.7-12.7 1.4-1.4a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2l-1.4 1.4-3.5-3.5Z"/></SvgIcon>
+    case 'duplicate':
+      return <SvgIcon {...props}><path d="M8 3h9a2 2 0 0 1 2 2v11h-2V5H8V3Zm-3 4h9a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm0 2v11h9V9H5Zm3 2h2v2h2v2h-2v2H8v-2H6v-2h2v-2Z"/></SvgIcon>
     case 'delete':
       return <SvgIcon {...props}><path d="M8 3h8l1 2h4v2H3V5h4l1-2Zm-2 6h12l-1 12H7L6 9Zm3 2 .5 8h1.7l-.2-8H9Zm4 0-.2 8h1.7l.5-8h-2Z"/></SvgIcon>
     case 'changeState':

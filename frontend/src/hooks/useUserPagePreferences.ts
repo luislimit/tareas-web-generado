@@ -26,11 +26,21 @@ export function useUserPagePreferences<T>(userId: string | number | undefined, p
 
   const update = useCallback((next: T | ((current: T) => T)) => {
     setValue(current => {
-      const resolved = typeof next === 'function' ? (next as (current: T) => T)(current) : next
+      // Varios useUserStoredState de una misma pantalla comparten la misma clave.
+      // Leer primero el valor persistido evita que un hook con una copia local
+      // antigua sobrescriba los filtros guardados por otro hook.
+      let latest = current
+      try {
+        const raw = localStorage.getItem(key)
+        if (raw) latest = { ...defaults, ...JSON.parse(raw) }
+      } catch {
+        latest = current
+      }
+      const resolved = typeof next === 'function' ? (next as (current: T) => T)(latest) : next
       localStorage.setItem(key, JSON.stringify(resolved))
       return resolved
     })
-  }, [key])
+  }, [key, defaults])
 
   return [value, update] as const
 }

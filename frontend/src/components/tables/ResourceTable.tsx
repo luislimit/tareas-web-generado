@@ -1,5 +1,5 @@
 import { Alert, Box, Paper } from '@mui/material'
-import { DataGrid, type GridColDef, type GridValidRowModel } from '@mui/x-data-grid'
+import { DataGrid, type GridColDef, type GridFilterModel, type GridRowParams, type GridValidRowModel } from '@mui/x-data-grid'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { FilterBar } from '../filters/FilterBar'
@@ -11,6 +11,7 @@ interface TablePreferences {
   visibility?: Record<string, boolean>
   order?: string[]
   widths?: Record<string, number>
+  filterModel?: GridFilterModel
 }
 
 interface ResourceTableProps<T extends GridValidRowModel> {
@@ -28,6 +29,9 @@ interface ResourceTableProps<T extends GridValidRowModel> {
   preferenceUserId?: string | number
   onFilteredRowsChange?: (rows: T[]) => void
   toolbar?: ReactNode
+  selectedRowId?: string | number | null
+  onRowClick?: (row: T) => void
+  onRowDoubleClick?: (row: T) => void
 }
 
 function prefKey(userId: string | number | undefined, key: string | undefined) {
@@ -49,6 +53,9 @@ function ResourceTableImpl<T extends GridValidRowModel>({
   preferenceUserId,
   onFilteredRowsChange,
   toolbar,
+  selectedRowId,
+  onRowClick,
+  onRowDoubleClick,
 }: ResourceTableProps<T>) {
   const storageKey = prefKey(preferenceUserId, preferenceKey)
   const [prefs, setPrefs] = useState<TablePreferences>({ density: 'compact' })
@@ -113,8 +120,13 @@ function ResourceTableImpl<T extends GridValidRowModel>({
           loading={loading}
           getRowId={getRowId}
           disableRowSelectionOnClick
+          onRowClick={(params: GridRowParams<T>) => onRowClick?.(params.row)}
+          onRowDoubleClick={(params: GridRowParams<T>) => onRowDoubleClick?.(params.row)}
+          getRowClassName={(params) => selectedRowId != null && String(params.id) === String(selectedRowId) ? 'resource-row-selected' : ''}
           density={prefs.density ?? 'compact'}
           onDensityChange={(density) => savePrefs({ density })}
+          filterModel={prefs.filterModel ?? { items: [] }}
+          onFilterModelChange={(filterModel) => savePrefs({ filterModel })}
           columnVisibilityModel={prefs.visibility ?? {}}
           onColumnVisibilityModelChange={(visibility) => savePrefs({ visibility })}
           onColumnWidthChange={(params) => savePrefs({ widths: { ...(prefs.widths ?? {}), [params.colDef.field]: params.width } })}
@@ -127,7 +139,17 @@ function ResourceTableImpl<T extends GridValidRowModel>({
           pageSizeOptions={[10, 25, 50, 100]}
           initialState={{ pagination: { paginationModel: { page: 0, pageSize: defaultPageSize } } }}
           localeText={{ noRowsLabel: emptyMessage }}
-          sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8fafc' } }}
+          sx={{
+            border: 0,
+            '& .MuiDataGrid-columnHeaders': { bgcolor: '#f8fafc' },
+            '& .MuiDataGrid-row.resource-row-selected': {
+              bgcolor: 'action.selected',
+              outline: '2px solid',
+              outlineColor: 'primary.main',
+              outlineOffset: '-2px',
+            },
+            '& .MuiDataGrid-row.resource-row-selected:hover': { bgcolor: 'action.selected' },
+          }}
         />
       </Paper>
     </Box>

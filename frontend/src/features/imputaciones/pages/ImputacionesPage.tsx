@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useCurrentUser } from '../../../app/currentUser'
+import { useUserStoredState } from '../../../hooks/useUserPagePreferences'
 import { AppIcon } from '../../../components/common/AppIcon'
 import { StateChip } from '../../../components/common/StateChip'
 import { MasterCrudPage, type CrudCreatePreset } from '../../../components/forms/MasterCrudPage'
@@ -31,15 +32,15 @@ export function ImputacionesPage(){
  const { currentUserId } = useCurrentUser()
  const location=useLocation()
  const quickState=(location.state??{}) as QuickCreateState
- const [actividadFiltro,setActividadFiltro]=useState<EstadoActividadFiltro>('activas')
- const [categoriasFiltro,setCategoriasFiltro]=useState<string[]>([])
- const [subcategoriasFiltro,setSubcategoriasFiltro]=useState<string[]>([])
- const [estadosPeticionFiltro,setEstadosPeticionFiltro]=useState<string[]|null>(null)
- const [peticionesFiltro,setPeticionesFiltro]=useState<string[]>([])
- const [campoFecha,setCampoFecha]=useState<'fecha'|'fechaAlta'>('fecha')
- const [periodo,setPeriodo]=useState<DatePeriod>('hoy')
- const [desde,setDesde]=useState(inicial.desde)
- const [hasta,setHasta]=useState(inicial.hasta)
+ const [actividadFiltro,setActividadFiltro]=useUserStoredState<EstadoActividadFiltro>(currentUserId,'imputaciones','actividad','activas')
+ const [categoriasFiltro,setCategoriasFiltro]=useUserStoredState<string[]>(currentUserId,'imputaciones','categorias',[])
+ const [subcategoriasFiltro,setSubcategoriasFiltro]=useUserStoredState<string[]>(currentUserId,'imputaciones','subcategorias',[])
+ const [estadosPeticionFiltro,setEstadosPeticionFiltro]=useUserStoredState<string[]|null>(currentUserId,'imputaciones','estadosPeticion',null)
+ const [peticionesFiltro,setPeticionesFiltro]=useUserStoredState<string[]>(currentUserId,'imputaciones','peticiones',[])
+ const [campoFecha,setCampoFecha]=useUserStoredState<'fecha'|'fechaAlta'>(currentUserId,'imputaciones','campoFecha','fecha')
+ const [periodo,setPeriodo]=useUserStoredState<DatePeriod>(currentUserId,'imputaciones','periodoFecha','hoy')
+ const [desde,setDesde]=useUserStoredState<string>(currentUserId,'imputaciones','fechaDesde',inicial.desde)
+ const [hasta,setHasta]=useUserStoredState<string>(currentUserId,'imputaciones','fechaHasta',inicial.hasta)
  const [docsImputacion,setDocsImputacion]=useState<Imputacion|null>(null)
  const estadosPeticionSeleccionados=estadosPeticionFiltro??(epq.data??[]).filter(e=>!e.estadoFinal).map(e=>String(e.id))
 
@@ -148,7 +149,7 @@ export function ImputacionesPage(){
    {name:'extra',label:'Extra',type:'checkbox'},
    {name:'estadoHorasId',label:'Estado horas',type:'select',required:true,options:estadoOpts,selectFirst:true},
    {name:'tipoHoraId',label:'Tipo de horas',type:'select',options:[{value:'',label:'— Sin tipo —'},...tipoHoraOpts]},
-   {name:'descripcion',label:'Descripción',expandText:true}
+   {name:'descripcion',label:'Descripción',expanding:true}
   ]}
   toForm={r=>{
    const peticion=(pq.data??[]).find(p=>String(p.id)===String(r?.peticionId??''))

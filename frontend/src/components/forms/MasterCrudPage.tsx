@@ -1,4 +1,4 @@
-import { Alert, Box, Checkbox, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Tooltip } from '@mui/material'
+import { Alert, Box, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select, Stack, TextField } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -6,13 +6,14 @@ import { FileDropTextField } from './FileDropTextField'
 import { ExpandingTextField } from './ExpandingTextField'
 import { getHttpErrorMessage } from '../../api/httpError'
 import { useResourceMutations } from '../../api/useResourceMutations'
-import { AppIcon } from '../common/AppIcon'
 import { ConfirmDeleteDialog } from '../common/ConfirmDeleteDialog'
 import { DatePeriodFilter, getDateRange, type DatePeriod } from '../filters/DatePeriodFilter'
 import { FilterBar } from '../filters/FilterBar'
 import { EntityDrawer } from '../common/EntityDrawer'
 import { PageHeader } from '../layout/PageHeader'
 import { ResourceTable } from '../tables/ResourceTable'
+import { useCurrentUser } from '../../app/currentUser'
+import { useUserStoredState } from '../../hooks/useUserPagePreferences'
 import { exportToExcel, type ExcelColumn } from '../../utils/exportExcel'
 import dayjs from 'dayjs'
 
@@ -28,8 +29,8 @@ export interface CrudField {
   selectFirst?:boolean
   multiline?:boolean
   minRows?:number
+  expanding?:boolean
   fileDrop?:boolean
-  expandText?:boolean
 }
 
 export interface CrudCreatePreset {
@@ -58,6 +59,7 @@ interface Props<T extends {id:number|string}> {
  queryKey:string
  toForm:(row?:T)=>Record<string,unknown>
  toPayload:(form:Record<string,unknown>)=>Record<string,unknown>
+ toDuplicateForm?:(row:T)=>Record<string,unknown>
  searchFields?:(keyof T)[]
  filters?:ReactNode
  tableSummary?:(visibleRows:T[])=>ReactNode
@@ -78,36 +80,34 @@ interface Props<T extends {id:number|string}> {
 
 export function MasterCrudPage<T extends {id:number|string}>({
   title, subtitle, singular, rows, loading, error, columns, fields, url, queryKey,
-  toForm, toPayload, searchFields=[], filters, tableSummary, createPreset, rowActions, actionsWidth=132,
+  toForm, toPayload, toDuplicateForm, searchFields=[], filters, tableSummary, createPreset, rowActions, actionsWidth=132,
   headerActions, iconOnlyCreate=false, onExport, exportLabel, onFilteredRowsChange, adminToolbar=false, onClearFilters,
   secondaryFilters, dateField, initialDatePeriod='todas',
 }:Props<T>){
+ const { currentUserId } = useCurrentUser()
  const [selected,setSelected]=useState<T|null>(null)
  const [open,setOpen]=useState(false)
+ const [duplicateMode,setDuplicateMode]=useState(false)
  const [form,setForm]=useState<Record<string,unknown>>(()=>toForm())
  const [deleteOpen,setDeleteOpen]=useState(false)
  const [presetDisabledFields,setPresetDisabledFields]=useState<string[]>([])
- const [estadoFiltro,setEstadoFiltro]=useState<'activos'|'inactivos'|'todos'>('activos')
+ const [estadoFiltro,setEstadoFiltro]=useUserStoredState<'activos'|'inactivos'|'todos'>(currentUserId, queryKey, 'estado', 'activos')
  const initialRange=getDateRange(initialDatePeriod)
- const [datePeriod,setDatePeriod]=useState<DatePeriod>(initialDatePeriod)
- const [dateDesde,setDateDesde]=useState(initialRange.desde)
- const [dateHasta,setDateHasta]=useState(initialRange.hasta)
+ const [datePeriod,setDatePeriod]=useUserStoredState<DatePeriod>(currentUserId, queryKey, 'periodoFecha', initialDatePeriod)
+ const [dateDesde,setDateDesde]=useUserStoredState<string>(currentUserId, queryKey, 'fechaDesde', initialRange.desde)
+ const [dateHasta,setDateHasta]=useUserStoredState<string>(currentUserId, queryKey, 'fechaHasta', initialRange.hasta)
  const exportRowsRef=useRef<T[]>(rows)
  const {createMutation,updateMutation,deleteMutation}=useResourceMutations<T,Record<string,unknown>>(url,queryKey)
  const saving=createMutation.isPending||updateMutation.isPending
  const mutationError=createMutation.error||updateMutation.error||deleteMutation.error
 
- const actionCols=useMemo<GridColDef<T>[]>(()=>[
+ const actionCols=useMemo<GridColDef<T>[]>(()=>rowActions?[
   ...columns,
   {
     field:'acciones', headerName:'Acciones', width:actionsWidth, sortable:false, filterable:false,
-    renderCell:({row})=><Stack direction="row" spacing={.25}>
-      {rowActions?.(row)}
-      <Tooltip title="Editar"><IconButton size="small" color="primary" onClick={(e)=>{e.stopPropagation();edit(row)}}><AppIcon name="edit" fontSize="small" /></IconButton></Tooltip>
-      <Tooltip title="Eliminar"><IconButton size="small" color="error" onClick={(e)=>{e.stopPropagation();setSelected(row);setDeleteOpen(true)}}><AppIcon name="delete" fontSize="small" /></IconButton></Tooltip>
-    </Stack>,
+    renderCell:({row})=><Stack direction="row" spacing={.25}>{rowActions(row)}</Stack>,
   },
- ], [columns, rowActions, actionsWidth])
+ ]:columns, [columns, rowActions, actionsWidth])
 
  const excelColumns=useMemo<ExcelColumn<T>[]>(()=>columns.map(column=>({
   header:column.headerName??column.field,
@@ -135,6 +135,7 @@ export function MasterCrudPage<T extends {id:number|string}>({
  useEffect(()=>{
   if(!createPreset)return
   setSelected(null)
+  setDuplicateMode(false)
   setForm({...toForm(), ...createPreset.values})
   setPresetDisabledFields(createPreset.disabledFields??[])
   setOpen(true)
@@ -153,20 +154,29 @@ export function MasterCrudPage<T extends {id:number|string}>({
  },[open, selected, form, fields])
 
  function create(){
+  setDuplicateMode(false)
   setSelected(null)
   setPresetDisabledFields([])
   setForm(toForm())
   setOpen(true)
  }
  function edit(row:T){
+  setDuplicateMode(false)
   setSelected(row)
   setPresetDisabledFields([])
   setForm(toForm(row))
   setOpen(true)
  }
+ function duplicate(row:T){
+  setSelected(row)
+  setDuplicateMode(true)
+  setPresetDisabledFields([])
+  setForm(toDuplicateForm?toDuplicateForm(row):toForm(row))
+  setOpen(true)
+ }
  async function save(){
   const payload=toPayload(form)
-  if(selected) await updateMutation.mutateAsync({id:selected.id,payload})
+  if(selected&&!duplicateMode) await updateMutation.mutateAsync({id:selected.id,payload})
   else await createMutation.mutateAsync(payload)
   setOpen(false)
  }
@@ -188,6 +198,15 @@ export function MasterCrudPage<T extends {id:number|string}>({
    onCreate={create}
    onExport={exportAction}
    exportLabel={exportLabel??`Exportar ${title.toLowerCase()} a Excel`}
+   onDuplicate={()=>{if(selected)duplicate(selected)}}
+   duplicateLabel={`Duplicar ${singular}`}
+   duplicateDisabled={!selected}
+   onEdit={()=>{if(selected)edit(selected)}}
+   editLabel={`Editar ${singular}`}
+   editDisabled={!selected}
+   onDelete={()=>{if(selected)setDeleteOpen(true)}}
+   deleteLabel={`Eliminar ${singular}`}
+   deleteDisabled={!selected}
    onClearFilters={(hasActivo||onClearFilters||dateField)?()=>{
     if(hasActivo)setEstadoFiltro('activos')
     if(dateField){const range=getDateRange(initialDatePeriod);setDatePeriod(initialDatePeriod);setDateDesde(range.desde);setDateHasta(range.hasta)}
@@ -201,12 +220,13 @@ export function MasterCrudPage<T extends {id:number|string}>({
     {hasActivo&&<FormControl size="small" sx={{minWidth:150}}><InputLabel>Estado</InputLabel><Select label="Estado" value={estadoFiltro} onChange={e=>setEstadoFiltro(e.target.value as 'activos'|'inactivos'|'todos')}><MenuItem value="activos">Activos</MenuItem><MenuItem value="inactivos">Inactivos</MenuItem><MenuItem value="todos">Todos</MenuItem></Select></FormControl>}
     {filters}
   </FilterBar>}
-  <ResourceTable rows={effectiveRows} columns={actionCols} loading={loading} error={error} searchFields={searchFields} searchPlaceholder="Buscar por textos..." summary={tableSummary} onFilteredRowsChange={handleFilteredRowsChange}
+  <ResourceTable preferenceKey={queryKey} preferenceUserId={currentUserId} rows={effectiveRows} columns={actionCols} loading={loading} error={error} searchFields={searchFields} searchPlaceholder="Buscar por textos..." summary={tableSummary} onFilteredRowsChange={handleFilteredRowsChange}
+   selectedRowId={selected?.id} onRowClick={row=>setSelected(row)} onRowDoubleClick={row=>edit(row)}
    toolbar={<>
     {secondaryFilters}
     {dateField&&<DatePeriodFilter period={datePeriod} desde={dateDesde} hasta={dateHasta} error={Boolean(dateDesde&&dateHasta&&dayjs(dateHasta).isBefore(dayjs(dateDesde),'day'))} onChange={(period,desde,hasta)=>{setDatePeriod(period);setDateDesde(desde);setDateHasta(hasta)}}/>}
    </>} />
-  <EntityDrawer open={open} title={selected?`Editar ${singular}`:`Nuevo ${singular}`} saving={saving} onClose={()=>setOpen(false)} onSave={save}>
+  <EntityDrawer open={open} title={duplicateMode?`Duplicar ${singular}`:selected?`Editar ${singular}`:`Nuevo ${singular}`} saving={saving} onClose={()=>setOpen(false)} onSave={save}>
    <Stack spacing={2} sx={{flex:1,minHeight:0}}>{fields.map(f=>f.type==='checkbox'?
     <FormControlLabel key={f.name} control={<Checkbox checked={Boolean(form[f.name])} disabled={disabledOf(f)} onChange={(_,v)=>set(f,v)}/>} label={f.label}/>
     :f.type==='select'?
@@ -218,7 +238,7 @@ export function MasterCrudPage<T extends {id:number|string}>({
     </FormControl>
     :f.fileDrop?<FileDropTextField key={f.name} fullWidth size="small" required={f.required} label={f.label}
       value={String(form[f.name]??'')} disabled={disabledOf(f)} onValueChange={value=>set(f,value)}/>
-    :f.expandText?<ExpandingTextField key={f.name} label={f.label} required={f.required} disabled={disabledOf(f)} value={String(form[f.name]??'')} onChange={value=>set(f,value)}/>
+    :f.expanding?<ExpandingTextField key={f.name} label={f.label} required={f.required} disabled={disabledOf(f)} value={String(form[f.name]??'')} onChange={value=>set(f,value)}/>
     :<TextField key={f.name} fullWidth size="small" required={f.required} label={f.label}
       type={f.type==='number'?'number':f.type==='email'?'email':f.type==='color'?'color':f.type==='date'?'date':'text'}
       slotProps={f.type==='date'?{inputLabel:{shrink:true}}:undefined}

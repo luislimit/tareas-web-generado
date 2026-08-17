@@ -5,11 +5,11 @@ import { useResourceMutations } from '../../../api/useResourceMutations'
 import { useCurrentUser } from '../../../app/currentUser'
 import { AppIcon } from '../../../components/common/AppIcon'
 import { EntityDrawer } from '../../../components/common/EntityDrawer'
+import { ExpandingTextField } from '../../../components/forms/ExpandingTextField'
 import { useTiposDocumento } from '../../tiposDocumento/hooks/useTiposDocumento'
 import { useUsuarios } from '../../usuarios/hooks/useUsuarios'
 import { useDocumentos } from '../hooks/useDocumentos'
 import type { Documento } from '../types/documento'
-import { ExpandingTextField } from '../../../components/forms/ExpandingTextField'
 
 export interface DocumentosVinculadosTarget {
   peticionId: number | string
@@ -152,7 +152,7 @@ export function DocumentosVinculadosDrawer({ open, target, onClose }: Props) {
           </Select>
         </FormControl>
         <TextField size="small" required label="Fichero" helperText="Ruta completa y nombre del fichero" value={nuevoDoc.nombre} onChange={e => setNuevoDoc({ ...nuevoDoc, nombre: e.target.value })} />
-        <ExpandingTextField label="Descripción" value={nuevoDoc.descripcion} onChange={descripcion => setNuevoDoc({ ...nuevoDoc, descripcion })} />
+        <ExpandingTextField label="Descripción" value={nuevoDoc.descripcion} onChange={value => setNuevoDoc(prev => ({ ...prev, descripcion: value }))} />
       </Stack>
     </EntityDrawer>
   </>

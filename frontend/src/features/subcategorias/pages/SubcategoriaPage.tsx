@@ -1,9 +1,11 @@
 import { FormControl, InputLabel, Select } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { ActiveStatusChip } from '../../../components/common/ActiveStatusChip'
 import { MultiSelectMenuItem } from '../../../components/common/MultiSelectMenuItem'
 import { MasterCrudPage } from '../../../components/forms/MasterCrudPage'
+import { useCurrentUser } from '../../../app/currentUser'
+import { useUserStoredState } from '../../../hooks/useUserPagePreferences'
 import { formatDate, textOf } from '../../../utils/presentation'
 import { useCategorias } from '../../categorias/hooks/useCategorias'
 import { useSubcategorias } from '../hooks/useSubcategorias'
@@ -20,7 +22,8 @@ const columns: GridColDef<Subcategoria>[] = [
 export function SubcategoriaPage() {
   const q = useSubcategorias()
   const cq = useCategorias()
-  const [categoriasFiltro, setCategoriasFiltro] = useState<string[]>([])
+  const { currentUserId } = useCurrentUser()
+  const [categoriasFiltro, setCategoriasFiltro] = useUserStoredState<string[]>(currentUserId, 'subcategorias', 'categorias', [])
 
   const rows = useMemo(() => {
     if (!categoriasFiltro.length) return q.data ?? []
