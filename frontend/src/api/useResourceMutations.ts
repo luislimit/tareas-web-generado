@@ -3,7 +3,11 @@ import { createResource, deleteResource, updateResource } from './resourceApi'
 
 export function useResourceMutations<T, P>(url:string, queryKey:string){
  const qc=useQueryClient()
- const invalidate=()=>qc.invalidateQueries({queryKey:[queryKey]})
+ const invalidate=()=>{
+  qc.invalidateQueries({queryKey:[queryKey]})
+  if(queryKey==='categorias') qc.invalidateQueries({queryKey:['subcategorias']})
+  if(queryKey==='subcategorias') qc.invalidateQueries({queryKey:['categorias']})
+ }
  return {
   createMutation: useMutation({mutationFn:(payload:P)=>createResource<T,P>(url,payload),onSuccess:invalidate}),
   updateMutation: useMutation({mutationFn:({id,payload}:{id:number|string,payload:P})=>updateResource<T,P>(url,id,payload),onSuccess:invalidate}),

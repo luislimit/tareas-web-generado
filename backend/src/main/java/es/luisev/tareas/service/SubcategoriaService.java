@@ -23,5 +23,5 @@ public class SubcategoriaService {
  public SubcategoriaDto update(Long id,SubcategoriaRequest r){Subcategoria x=entity(id);apply(x,r);return mapper.subcategoria(repository.save(x));}
  public void delete(Long id){repository.delete(entity(id));}
  private Subcategoria entity(Long id){return repository.findById(id).orElseThrow(()->new ResourceNotFoundException("Subcategoria no encontrado"));}
- private void apply(Subcategoria x,SubcategoriaRequest r){x.setCategoria(categoriaRepository.findById(r.categoriaId()).orElseThrow(()->new ResourceNotFoundException("Categoría no encontrada"))); x.setCodigo(r.codigo().trim()); x.setNombre(r.nombre().trim()); x.setActivo(r.activo()); if(x.getFechaAlta()==null)x.setFechaAlta(java.time.LocalDateTime.now().toString());}
+ private void apply(Subcategoria x,SubcategoriaRequest r){var categoria=categoriaRepository.findById(r.categoriaId()).orElseThrow(()->new ResourceNotFoundException("Categoría no encontrada")); if(r.activo()&&!categoria.isActivo()){categoria.setActivo(true);categoriaRepository.save(categoria);} x.setCategoria(categoria); x.setCodigo(r.codigo().trim()); x.setNombre(r.nombre().trim()); x.setActivo(r.activo()); if(x.getFechaAlta()==null)x.setFechaAlta(java.time.LocalDateTime.now().toString());}
 }

@@ -4,6 +4,7 @@ import { MasterCrudPage } from '../../../components/forms/MasterCrudPage'
 import { boolLabel } from '../../../utils/presentation'
 import type { EstadoHoras } from '../types/estadoHoras'
 import { useEstadosHoras } from '../hooks/useEstadosHoras'
+import { ActiveStatusChip } from '../../../components/common/ActiveStatusChip'
 
 const columns:GridColDef<EstadoHoras>[]=[
  {field:'codigo',headerName:'Código',width:130},
@@ -11,13 +12,13 @@ const columns:GridColDef<EstadoHoras>[]=[
  {field:'color',headerName:'Color',width:150,renderCell:({row})=><StateChip label={row.nombre} color={row.color}/>},
  {field:'orden',headerName:'Orden',width:85},
  {field:'estadoFinal',headerName:'Final',width:90,valueFormatter:v=>boolLabel(v)},
- {field:'activo',headerName:'Estado',width:110,valueFormatter:v=>boolLabel(v,'Activo','Inactivo')}
+ {field:'activo',headerName:'Estado',width:110,renderCell:p=><ActiveStatusChip active={Boolean(p.value)} activeLabel="Activo" inactiveLabel="Inactivo"/>}
 ]
 
 export function EstadosHorasPage(){
  const q=useEstadosHoras()
  return <MasterCrudPage<EstadoHoras>
-  title="Estados horas" subtitle="Ciclo administrativo de las imputaciones" singular="estado de horas"
+  adminToolbar title="Estados horas" subtitle="Ciclo administrativo de las imputaciones" singular="estado de horas"
   rows={q.data??[]} loading={q.isLoading} error={q.error} columns={columns}
   url="/estados-horas" queryKey="estados-horas" searchFields={['codigo','nombre']}
   fields={[

@@ -11,6 +11,7 @@ import { InicioPage } from '../features/inicio/pages/InicioPage'
 import { PeticionesPage } from '../features/peticiones/pages/PeticionesPage'
 import { SubcategoriaPage } from '../features/subcategorias/pages/SubcategoriaPage'
 import { TipoDocumentoPage } from '../features/tiposDocumento/pages/TipoDocumentoPage'
+import { TiposHoraPage } from '../features/tiposHora/pages/TiposHoraPage'
 import { UsuarioPage } from '../features/usuarios/pages/UsuarioPage'
 
 function RouteError() {
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       { path: '/admin/subcategorias', element: <SubcategoriaPage /> },
       { path: '/admin/estados', element: <EstadoPage /> },
       { path: '/admin/estados-horas', element: <EstadosHorasPage /> },
+      { path: '/admin/tipos-hora', element: <TiposHoraPage /> },
       { path: '/admin/usuarios', element: <UsuarioPage /> },
       { path: '/admin/tipos-documento', element: <TipoDocumentoPage /> },
       { path: '/configuracion', element: <ConfiguracionPage /> },

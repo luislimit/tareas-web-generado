@@ -123,6 +123,7 @@ export function AppLayout() {
                 {item('/admin/subcategorias', 'Subcategorías', <AppIcon name="subcategory" fontSize="small" />)}
                 {item('/admin/estados', 'Estados', <AppIcon name="state" fontSize="small" />)}
                 {item('/admin/estados-horas', 'Estados horas', <AppIcon name="stateTime" fontSize="small" />)}
+                {item('/admin/tipos-hora', 'Tipos de horas', <AppIcon name="hourType" fontSize="small" />)}
                 {item('/admin/usuarios', 'Usuarios', <AppIcon name="users" fontSize="small" />)}
                 {item('/admin/tipos-documento', 'Tipos documento', <AppIcon name="documentType" fontSize="small" />)}
               </List>

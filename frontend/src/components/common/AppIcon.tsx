@@ -5,7 +5,8 @@ export type AppIconName =
   | 'category' | 'subcategory' | 'state' | 'stateTime' | 'users' | 'documentType'
   | 'edit' | 'delete' | 'changeState' | 'history' | 'add' | 'close'
   | 'chevronLeft' | 'chevronRight' | 'chevronUp' | 'chevronDown'
-  | 'pending' | 'calendarWeek' | 'calendarMonth' | 'warning' | 'user'
+  | 'pending' | 'inProgress' | 'calendarWeek' | 'calendarMonth' | 'warning' | 'user'
+  | 'addTime' | 'addDocument' | 'link' | 'info' | 'hourType' | 'export' | 'open' | 'excel' | 'newDocument' | 'clearFilters' | 'documentEmpty' | 'documentFilled'
 
 interface Props extends SvgIconProps { name: AppIconName }
 
@@ -49,6 +50,32 @@ export function AppIcon({ name, ...props }: Props) {
       return <SvgIcon {...props}><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></SvgIcon>
     case 'pending':
       return <SvgIcon {...props}><path d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h5v2H8V8Zm0 4h8v2H8v-2Zm0 4h6v2H8v-2Z"/></SvgIcon>
+    case 'inProgress':
+      return <SvgIcon {...props}><path d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h6v2H8V8Zm0 4h8v2H8v-2Zm0 4h5v2H8v-2Zm8-8h2v5h-2V8Zm0 7h2v2h-2v-2Z"/></SvgIcon>
+    case 'addTime':
+      return <SvgIcon {...props}><path d="M5 3h12v2h2a2 2 0 0 1 2 2v4h-2V9H5v10h6v2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2V3Zm2 0h8v2H7V3Zm9 9a6 6 0 1 1 0 12 6 6 0 0 1 0-12Zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-1 1h2v3h2v2h-4v-5Z"/></SvgIcon>
+    case 'addDocument':
+      return <SvgIcon {...props}><path d="M5 2h9l5 5v5h-2V8h-4V4H7v16h5v2H5V2Zm10 11h2v3h3v2h-3v3h-2v-3h-3v-2h3v-3Z"/></SvgIcon>
+    case 'link':
+      return <SvgIcon {...props}><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.4-3.4a4 4 0 0 1 5.7 5.7l-3.2 3.2a4 4 0 0 1-5.7 0l1.4-1.4a2 2 0 0 0 2.9 0l3.2-3.2a2 2 0 1 0-2.9-2.9L12 13.4a1 1 0 0 1-1.4 0Zm2.8-2.8a1 1 0 0 1 0 1.4L10 15.4a4 4 0 0 1-5.7-5.7l3.2-3.2a4 4 0 0 1 5.7 0l-1.4 1.4a2 2 0 0 0-2.9 0L5.7 11a2 2 0 1 0 2.9 2.9l3.4-3.4a1 1 0 0 1 1.4 0Z"/></SvgIcon>
+    case 'info':
+      return <SvgIcon {...props}><path d="M11 10h2v8h-2v-8Zm0-4h2v2h-2V6Zm1-4a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Z"/></SvgIcon>
+    case 'hourType':
+      return <SvgIcon {...props}><path d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h8v2H8V8Zm0 4h5v2H8v-2Zm7 0h2v4h-2v-4Zm-7 4h5v2H8v-2Z"/></SvgIcon>
+    case 'export':
+      return <SvgIcon {...props}><path d="M5 2h10l4 4v5h-2V7h-4V4H7v16h5v2H5V2Zm10 11h2v4.6l1.8-1.8 1.4 1.4L16 21.4l-4.2-4.2 1.4-1.4 1.8 1.8V13Z"/></SvgIcon>
+    case 'newDocument':
+      return <SvgIcon {...props}><path d="M5 2h9l5 5v5h-2V8h-4V4H7v16h5v2H5V2Zm10 11h2v3h3v2h-3v3h-2v-3h-3v-2h3v-3Zm0-8.2V6h1.2L15 4.8Z"/></SvgIcon>
+    case 'excel':
+      return <SvgIcon {...props} viewBox="0 0 24 24"><path d="M4 2h11l5 5v15H4V2Zm2 2v16h12V8h-4V4H6Zm9 .8V6h1.2L15 4.8ZM8 10h2.2l1.8 2.7 1.8-2.7H16l-2.9 4 3.1 4h-2.3L12 15.2 10.1 18H7.8l3.1-4L8 10Z"/></SvgIcon>
+    case 'clearFilters':
+      return <SvgIcon {...props}><path d="M3 4h18l-7 8v5.2l-4 2V12L3 4Zm4.4 2L12 11.2 16.6 6H7.4Zm9.9 9.9 1.4-1.4 1.8 1.8 1.8-1.8 1.4 1.4-1.8 1.8 1.8 1.8-1.4 1.4-1.8-1.8-1.8 1.8-1.4-1.4 1.8-1.8-1.8-1.8Z"/></SvgIcon>
+    case 'documentEmpty':
+      return <SvgIcon {...props}><path d="M5 2h9l5 5v15H5V2Zm2 2v16h10V8h-4V4H7Zm8 .8V6h1.2L15 4.8Z"/></SvgIcon>
+    case 'documentFilled':
+      return <SvgIcon {...props}><path d="M5 2h9l5 5v15H5V2Zm9 2.8V7h2.2L14 4.8ZM8 10h8v2H8v-2Zm0 4h8v2H8v-2Zm0 4h6v2H8v-2Z"/></SvgIcon>
+    case 'open':
+      return <SvgIcon {...props}><path d="M4 4h7l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v12h16V8h-7.8l-2-2H4Zm8 3h5v5h-2v-1.6l-4.3 4.3-1.4-1.4 4.3-4.3H12V9Z"/></SvgIcon>
     case 'calendarWeek':
       return <SvgIcon {...props}><path d="M6 2v2H5a2 2 0 0 0-2 2v14h18V6a2 2 0 0 0-2-2h-1V2h-2v2H8V2H6Zm13 8v8H5v-8h14ZM7 12h3v2H7v-2Zm4 0h3v2h-3v-2Zm4 0h2v2h-2v-2Zm-8 3h3v2H7v-2Zm4 0h3v2h-3v-2Z"/></SvgIcon>
     case 'calendarMonth':

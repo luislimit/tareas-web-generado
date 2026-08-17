@@ -8,5 +8,6 @@ public class DocumentoController {
  @GetMapping(params="peticionId") public List<DocumentoDto> byPeticion(@RequestParam Long peticionId){return service.byPeticion(peticionId);}
  @PostMapping @ResponseStatus(HttpStatus.CREATED) public DocumentoDto create(@Valid @RequestBody DocumentoRequest r){return service.create(r);}
  @PutMapping("/{id}") public DocumentoDto update(@PathVariable Long id,@Valid @RequestBody DocumentoRequest r){return service.update(id,r);}
+ @PostMapping("/{id}/abrir") @ResponseStatus(HttpStatus.NO_CONTENT) public void abrir(@PathVariable Long id){service.abrir(id);}
  @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable Long id){service.delete(id);}
 }

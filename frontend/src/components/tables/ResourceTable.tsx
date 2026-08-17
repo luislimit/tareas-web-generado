@@ -1,8 +1,17 @@
-import { Alert, Box, InputAdornment, Paper, TextField } from '@mui/material'
+import { Alert, Box, Paper } from '@mui/material'
 import { DataGrid, type GridColDef, type GridValidRowModel } from '@mui/x-data-grid'
-import { useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { UiGlyph } from '../common/UiGlyph'
+import { FilterBar } from '../filters/FilterBar'
+import { SearchTextFilter } from '../filters/SearchTextFilter'
+
+interface TablePreferences {
+  search?: string
+  density?: 'compact' | 'standard' | 'comfortable'
+  visibility?: Record<string, boolean>
+  order?: string[]
+  widths?: Record<string, number>
+}
 
 interface ResourceTableProps<T extends GridValidRowModel> {
   rows: T[]
@@ -15,21 +24,54 @@ interface ResourceTableProps<T extends GridValidRowModel> {
   getRowId?: (row: T) => string | number
   defaultPageSize?: number
   summary?: (visibleRows: T[]) => ReactNode
+  preferenceKey?: string
+  preferenceUserId?: string | number
+  onFilteredRowsChange?: (rows: T[]) => void
+  toolbar?: ReactNode
 }
 
-export function ResourceTable<T extends GridValidRowModel>({
+function prefKey(userId: string | number | undefined, key: string | undefined) {
+  return key ? `tareas.user.${userId || 'anon'}.table.${key}` : ''
+}
+
+function ResourceTableImpl<T extends GridValidRowModel>({
   rows,
   columns,
   loading = false,
   error,
   searchFields = [],
-  searchPlaceholder = 'Buscar...',
+  searchPlaceholder = 'Buscar por textos...',
   emptyMessage = 'No hay datos para mostrar.',
   getRowId,
   defaultPageSize = 25,
   summary,
+  preferenceKey,
+  preferenceUserId,
+  onFilteredRowsChange,
+  toolbar,
 }: ResourceTableProps<T>) {
-  const [search, setSearch] = useState('')
+  const storageKey = prefKey(preferenceUserId, preferenceKey)
+  const [prefs, setPrefs] = useState<TablePreferences>({ density: 'compact' })
+
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      const raw = localStorage.getItem(storageKey)
+      setPrefs(raw ? { density: 'compact', ...JSON.parse(raw) } : { density: 'compact' })
+    } catch {
+      setPrefs({ density: 'compact' })
+    }
+  }, [storageKey])
+
+  const savePrefs = (patch: Partial<TablePreferences>) => {
+    setPrefs(current => {
+      const next = { ...current, ...patch }
+      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const search = prefs.search ?? ''
   const filteredRows = useMemo(() => {
     const q = search.trim().toLocaleLowerCase('es')
     if (!q || searchFields.length === 0) return rows
@@ -39,26 +81,49 @@ export function ResourceTable<T extends GridValidRowModel>({
     }))
   }, [rows, search, searchFields])
 
+  const lastNotifiedRows = useRef<T[]>([])
+  useEffect(() => {
+    if (!onFilteredRowsChange) return
+    const previous = lastNotifiedRows.current
+    const unchanged = previous.length === filteredRows.length && previous.every((row, index) => row === filteredRows[index])
+    if (unchanged) return
+    lastNotifiedRows.current = filteredRows
+    onFilteredRowsChange(filteredRows)
+  }, [filteredRows, onFilteredRowsChange])
+
+  const configuredColumns = useMemo(() => {
+    const byField = new Map(columns.map(column => [column.field, column]))
+    const ordered = (prefs.order ?? []).map(field => byField.get(field)).filter(Boolean) as GridColDef<T>[]
+    const remaining = columns.filter(column => !(prefs.order ?? []).includes(column.field))
+    return [...ordered, ...remaining].map(column => prefs.widths?.[column.field] ? { ...column, width: prefs.widths[column.field], flex: undefined } : column)
+  }, [columns, prefs.order, prefs.widths])
+
   return (
     <Box>
-      <TextField
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        size="small"
-        placeholder={searchPlaceholder}
-        sx={{ width: 360, mb: 1.5 }}
-        InputProps={{ startAdornment: <InputAdornment position="start"><UiGlyph text="⌕" title="Buscar" /></InputAdornment> }}
-      />
+      <FilterBar>
+        {toolbar}
+        <SearchTextFilter value={search} onChange={(value) => savePrefs({ search: value })} placeholder={searchPlaceholder} />
+      </FilterBar>
       {error && <Alert severity="error" sx={{ mb: 1.5 }}>No se han podido recuperar los datos del backend.</Alert>}
       {summary && <Box sx={{ mb: 1.25 }}>{summary(filteredRows)}</Box>}
       <Paper variant="outlined" sx={{ height: 'calc(100vh - 190px)', minHeight: 430, overflow: 'hidden' }}>
         <DataGrid
           rows={filteredRows}
-          columns={columns}
+          columns={configuredColumns}
           loading={loading}
           getRowId={getRowId}
           disableRowSelectionOnClick
-          density="compact"
+          density={prefs.density ?? 'compact'}
+          onDensityChange={(density) => savePrefs({ density })}
+          columnVisibilityModel={prefs.visibility ?? {}}
+          onColumnVisibilityModelChange={(visibility) => savePrefs({ visibility })}
+          onColumnWidthChange={(params) => savePrefs({ widths: { ...(prefs.widths ?? {}), [params.colDef.field]: params.width } })}
+          onColumnOrderChange={(params) => {
+            const order = configuredColumns.map(column => column.field)
+            const [moved] = order.splice(params.oldIndex, 1)
+            order.splice(params.targetIndex, 0, moved)
+            savePrefs({ order })
+          }}
           pageSizeOptions={[10, 25, 50, 100]}
           initialState={{ pagination: { paginationModel: { page: 0, pageSize: defaultPageSize } } }}
           localeText={{ noRowsLabel: emptyMessage }}
@@ -68,3 +133,5 @@ export function ResourceTable<T extends GridValidRowModel>({
     </Box>
   )
 }
+
+export const ResourceTable = memo(ResourceTableImpl) as typeof ResourceTableImpl

@@ -46,6 +46,7 @@ export interface CambioEstadoRequest {
   usuarioId: number | string
   fechaCambio?: string
   observaciones: string
+  imputacionId?: number | string | null
 }
 
 export interface PeticionEstado {
@@ -59,4 +60,5 @@ export interface PeticionEstado {
   usuarioId: number | string
   usuarioNombre?: string
   observaciones?: string
+  imputacionId?: number | string | null
 }
