@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Checkbox, Divider, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
 import { useMemo, useRef, useState } from 'react'
@@ -9,13 +9,13 @@ import { useUserStoredState } from '../../../hooks/useUserPagePreferences'
 import { AppIcon } from '../../../components/common/AppIcon'
 import { ConfirmDeleteDialog } from '../../../components/common/ConfirmDeleteDialog'
 import { EntityDrawer } from '../../../components/common/EntityDrawer'
-import { ExpandingTextField } from '../../../components/forms/ExpandingTextField'
 import { StateChip } from '../../../components/common/StateChip'
 import { PageHeader } from '../../../components/layout/PageHeader'
 import { BusinessEntityFilters, type EstadoActividadFiltro } from '../../../components/filters/BusinessEntityFilters'
 import { DatePeriodFilter, getDateRange, type DatePeriod } from '../../../components/filters/DatePeriodFilter'
 import { FilterBar } from '../../../components/filters/FilterBar'
-import { ResourceTable } from '../../../components/tables/ResourceTable'
+import { ResourceTable, resetStoredTableColumns } from '../../../components/tables/ResourceTable'
+import { ExpandingTextField } from '../../../components/forms/ExpandingTextField'
 import { formatDate, formatHours } from '../../../utils/presentation'
 import { exportToExcel } from '../../../utils/exportExcel'
 import { useCategorias } from '../../categorias/hooks/useCategorias'
@@ -58,6 +58,8 @@ export function PeticionesPage(){
  const [hasta,setHasta]=useUserStoredState<string>(currentUserId,'peticiones','fechaHasta','')
  const [form,setForm]=useState<PeticionRequest>(emptyForm)
  const [change,setChange]=useState<CambioEstadoRequest>({estadoNuevoId:'',usuarioId:'',fechaCambio:dayjs().format('YYYY-MM-DDTHH:mm'),observaciones:''})
+ const [editStateReasonOpen,setEditStateReasonOpen]=useState(false)
+ const [editStateReason,setEditStateReason]=useState('')
  const [quickImputacion,setQuickImputacion]=useState({fecha:dayjs().format('YYYY-MM-DD'),horas:0,extra:false,estadoHorasId:'',tipoHoraId:'',usuarioId:'',descripcion:''})
  const exportRowsRef=useRef<Peticion[]>([])
  const history=useHistorialPeticion(selected?.id,stateHistoryOpen)
@@ -183,10 +185,33 @@ export function PeticionesPage(){
   })
   setEditOpen(true)
  }
+ async function persistEditedPeticionWithStateReason(){
+  if(!selected||duplicateMode||!editStateReason.trim())return
+  const nuevoEstadoId=id(form.estadoId)
+  const payload={...form,categoriaId:id(form.categoriaId),subcategoriaId:id(form.subcategoriaId),usuarioId:id(form.usuarioId),estadoId:id(selected.estadoId)}
+  await m.updateMutation.mutateAsync({id:selected.id,payload})
+  await m.changeMutation.mutateAsync({id:selected.id,payload:{
+   estadoNuevoId:nuevoEstadoId,
+   usuarioId:id(currentUserId||selected.usuarioId),
+   fechaCambio:dayjs().format('YYYY-MM-DDTHH:mm'),
+   observaciones:editStateReason.trim(),
+  }})
+  const nuevoEstado=(eq.data??[]).find(e=>String(e.id)===String(nuevoEstadoId))
+  setSelected({...selected,estadoId:nuevoEstadoId,estadoNombre:nuevoEstado?.nombre??selected.estadoNombre})
+  setEditStateReasonOpen(false)
+  setEditStateReason('')
+  setEditOpen(false)
+ }
  async function save(){
   const payload={...form,categoriaId:id(form.categoriaId),subcategoriaId:id(form.subcategoriaId),usuarioId:id(form.usuarioId),estadoId:id(form.estadoId)}
-  if(selected&&!duplicateMode)await m.updateMutation.mutateAsync({id:selected.id,payload})
-  else await m.createMutation.mutateAsync(payload)
+  if(selected&&!duplicateMode){
+   if(String(selected.estadoId)!==String(form.estadoId)){
+    setEditStateReason('')
+    setEditStateReasonOpen(true)
+    return
+   }
+   await m.updateMutation.mutateAsync({id:selected.id,payload})
+  }else await m.createMutation.mutateAsync(payload)
   setEditOpen(false)
  }
  async function saveChange(){
@@ -201,7 +226,7 @@ export function PeticionesPage(){
  const err=m.createMutation.error||m.updateMutation.error||m.deleteMutation.error||m.changeMutation.error||imputacionMutations.createMutation.error
 
  return <Box>
-  <PageHeader title="Peticiones" subtitle="Seguimiento y planificación del trabajo" createLabel="Nueva petición" onCreate={()=>openEdit()} onDuplicate={()=>{if(selected)openDuplicate(selected)}} duplicateLabel="Duplicar petición" duplicateDisabled={!selected} onEdit={()=>{if(selected)openEdit(selected)}} editLabel="Editar petición" editDisabled={!selected} onDelete={()=>{if(selected)setDeleteOpen(true)}} deleteLabel="Eliminar petición" deleteDisabled={!selected} onExport={exportar} exportLabel="Exportar peticiones a Excel" onClearFilters={limpiarFiltros}/>
+  <PageHeader title="Peticiones" subtitle="Seguimiento y planificación del trabajo" createLabel="Nueva petición" onCreate={()=>openEdit()} onDuplicate={()=>{if(selected)openDuplicate(selected)}} duplicateLabel="Duplicar petición" duplicateDisabled={!selected} onEdit={()=>{if(selected)openEdit(selected)}} editLabel="Editar petición" editDisabled={!selected} onDelete={()=>{if(selected)setDeleteOpen(true)}} deleteLabel="Eliminar petición" deleteDisabled={!selected} onExport={exportar} exportLabel="Exportar peticiones a Excel" onResetColumns={()=>resetStoredTableColumns(currentUserId, 'peticiones')} onClearFilters={limpiarFiltros}/>
   {err&&<Alert severity="error" sx={{mb:1}}>{getHttpErrorMessage(err)}</Alert>}
   <FilterBar>
    <BusinessEntityFilters
@@ -226,7 +251,7 @@ export function PeticionesPage(){
     <FormControl size="small" required disabled={!form.categoriaId}><InputLabel>Subcategoría</InputLabel><Select label="Subcategoría" value={form.subcategoriaId} onChange={e=>setForm({...form,subcategoriaId:e.target.value})}>{subcategoriasFormulario.map(s=><MenuItem key={s.id} value={String(s.id)}>{s.codigo?`${s.codigo} - `:''}{s.nombre}</MenuItem>)}</Select></FormControl>
     <TextField size="small" label="Código" required value={form.codigo} onChange={e=>setForm({...form,codigo:e.target.value})}/>
     <TextField size="small" label="Asunto" required value={form.asunto} onChange={e=>setForm({...form,asunto:e.target.value})}/>
-    <ExpandingTextField label="Descripción" value={form.descripcion} onChange={value=>setForm(prev=>({...prev,descripcion:value}))}/>
+    <ExpandingTextField label="Descripción" value={form.descripcion} onChange={descripcion=>setForm({...form,descripcion})}/>
     <FormControl size="small" required><InputLabel>Usuario</InputLabel><Select label="Usuario" value={form.usuarioId} onChange={e=>setForm({...form,usuarioId:e.target.value})}>{(uq.data??[]).map(u=><MenuItem key={u.id} value={String(u.id)}>{u.nombre}</MenuItem>)}</Select></FormControl>
     <FormControl size="small" required><InputLabel>Estado inicial</InputLabel><Select label="Estado inicial" value={form.estadoId} onChange={e=>setForm({...form,estadoId:e.target.value})}>{(eq.data??[]).map(e=><MenuItem key={e.id} value={String(e.id)}>{e.nombre}</MenuItem>)}</Select></FormControl>
     <Stack direction="row" spacing={1}>
@@ -261,7 +286,7 @@ export function PeticionesPage(){
   </EntityDrawer>
 
   <EntityDrawer open={quickImputacionOpen} title={`Nueva imputación${selected?` · ${selected.codigo}`:''}`} saving={imputacionMutations.createMutation.isPending} onClose={()=>setQuickImputacionOpen(false)} onSave={saveQuickImputacion}>
-   <Stack spacing={2} sx={{flex:1,minHeight:0}}>
+   <Stack spacing={2}>
     <TextField size="small" label="Categoría" value={(cq.data??[]).find(c=>String(c.id)===String(selected?.categoriaId))?.nombre??''} disabled/>
     <TextField size="small" label="Subcategoría" value={(sq.data??[]).find(sc=>String(sc.id)===String(selected?.subcategoriaId))?.nombre??''} disabled/>
     <TextField size="small" label="Petición" value={selected?`${selected.codigo} - ${selected.asunto}`:''} disabled/>
@@ -282,6 +307,20 @@ export function PeticionesPage(){
   />
 
   <ImputacionInfoDrawer open={Boolean(historyImputacion)} imputacion={historyImputacion} onClose={()=>setHistoryImputacion(null)}/>
+
+  <Dialog open={editStateReasonOpen} onClose={()=>{if(!m.updateMutation.isPending&&!m.changeMutation.isPending)setEditStateReasonOpen(false)}} fullWidth maxWidth="sm">
+   <DialogTitle>Motivo del cambio de estado</DialogTitle>
+   <DialogContent>
+    <Stack spacing={2} sx={{pt:1}}>
+     <Typography variant="body2" color="text.secondary">El estado de la petición ha cambiado. Indica el motivo para registrarlo en el historial de estados.</Typography>
+     <TextField autoFocus fullWidth required multiline minRows={4} label="Motivo del cambio de estado" value={editStateReason} onChange={e=>setEditStateReason(e.target.value)}/>
+    </Stack>
+   </DialogContent>
+   <DialogActions>
+    <Button onClick={()=>setEditStateReasonOpen(false)} disabled={m.updateMutation.isPending||m.changeMutation.isPending}>Cancelar</Button>
+    <Button variant="contained" onClick={persistEditedPeticionWithStateReason} disabled={!editStateReason.trim()||m.updateMutation.isPending||m.changeMutation.isPending}>Guardar petición</Button>
+   </DialogActions>
+  </Dialog>
 
   <ConfirmDeleteDialog open={deleteOpen} text={`¿Está seguro de que desea borrar la petición ${selected?.codigo??''}?`} loading={m.deleteMutation.isPending} onCancel={()=>setDeleteOpen(false)} onConfirm={async()=>{if(selected)await m.deleteMutation.mutateAsync(selected.id);setDeleteOpen(false)}}/>
  </Box>

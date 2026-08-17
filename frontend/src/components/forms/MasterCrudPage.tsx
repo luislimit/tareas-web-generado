@@ -11,7 +11,7 @@ import { DatePeriodFilter, getDateRange, type DatePeriod } from '../filters/Date
 import { FilterBar } from '../filters/FilterBar'
 import { EntityDrawer } from '../common/EntityDrawer'
 import { PageHeader } from '../layout/PageHeader'
-import { ResourceTable } from '../tables/ResourceTable'
+import { ResourceTable, resetStoredTableColumns } from '../tables/ResourceTable'
 import { useCurrentUser } from '../../app/currentUser'
 import { useUserStoredState } from '../../hooks/useUserPagePreferences'
 import { exportToExcel, type ExcelColumn } from '../../utils/exportExcel'
@@ -207,6 +207,7 @@ export function MasterCrudPage<T extends {id:number|string}>({
    onDelete={()=>{if(selected)setDeleteOpen(true)}}
    deleteLabel={`Eliminar ${singular}`}
    deleteDisabled={!selected}
+   onResetColumns={()=>resetStoredTableColumns(currentUserId, queryKey)}
    onClearFilters={(hasActivo||onClearFilters||dateField)?()=>{
     if(hasActivo)setEstadoFiltro('activos')
     if(dateField){const range=getDateRange(initialDatePeriod);setDatePeriod(initialDatePeriod);setDateDesde(range.desde);setDateHasta(range.hasta)}

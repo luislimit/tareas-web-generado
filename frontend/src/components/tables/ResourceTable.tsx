@@ -38,6 +38,22 @@ function prefKey(userId: string | number | undefined, key: string | undefined) {
   return key ? `tareas.user.${userId || 'anon'}.table.${key}` : ''
 }
 
+const RESET_COLUMNS_EVENT = 'tareas:reset-table-columns'
+
+export function resetStoredTableColumns(userId: string | number | undefined, key: string | undefined) {
+  const storageKey = prefKey(userId, key)
+  if (!storageKey) return
+  try {
+    const raw = localStorage.getItem(storageKey)
+    const current: TablePreferences = raw ? JSON.parse(raw) : {}
+    const { visibility: _visibility, order: _order, widths: _widths, ...rest } = current
+    localStorage.setItem(storageKey, JSON.stringify(rest))
+  } catch {
+    localStorage.removeItem(storageKey)
+  }
+  window.dispatchEvent(new CustomEvent(RESET_COLUMNS_EVENT, { detail: { storageKey } }))
+}
+
 function ResourceTableImpl<T extends GridValidRowModel>({
   rows,
   columns,
@@ -68,6 +84,20 @@ function ResourceTableImpl<T extends GridValidRowModel>({
     } catch {
       setPrefs({ density: 'compact' })
     }
+  }, [storageKey])
+
+  useEffect(() => {
+    if (!storageKey) return
+    const handleResetColumns = (event: Event) => {
+      const customEvent = event as CustomEvent<{ storageKey?: string }>
+      if (customEvent.detail?.storageKey !== storageKey) return
+      setPrefs(current => {
+        const { visibility: _visibility, order: _order, widths: _widths, ...rest } = current
+        return rest
+      })
+    }
+    window.addEventListener(RESET_COLUMNS_EVENT, handleResetColumns)
+    return () => window.removeEventListener(RESET_COLUMNS_EVENT, handleResetColumns)
   }, [storageKey])
 
   const savePrefs = (patch: Partial<TablePreferences>) => {

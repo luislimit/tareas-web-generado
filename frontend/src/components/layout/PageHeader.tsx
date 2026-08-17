@@ -12,6 +12,8 @@ interface PageHeaderProps {
   duplicateDisabled?: boolean
   exportLabel?: string
   onExport?: () => void
+  resetColumnsLabel?: string
+  onResetColumns?: () => void
   clearFiltersLabel?: string
   onClearFilters?: () => void
   editLabel?: string
@@ -39,6 +41,8 @@ export function PageHeader({
   duplicateDisabled = false,
   exportLabel = 'Exportar a Excel',
   onExport,
+  resetColumnsLabel = 'Restablecer columnas',
+  onResetColumns,
   clearFiltersLabel = 'Limpiar filtros',
   onClearFilters,
   editLabel = 'Editar',
@@ -94,6 +98,13 @@ export function PageHeader({
           <Tooltip title={exportLabel}>
             <IconButton aria-label={exportLabel} onClick={onExport} sx={{ ...actionButtonSx, color: '#217346' }}>
               <AppIcon name="excel" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {onResetColumns && (
+          <Tooltip title={resetColumnsLabel}>
+            <IconButton aria-label={resetColumnsLabel} onClick={onResetColumns} sx={{ ...actionButtonSx, color: 'text.secondary' }}>
+              <AppIcon name="resetColumns" />
             </IconButton>
           </Tooltip>
         )}
