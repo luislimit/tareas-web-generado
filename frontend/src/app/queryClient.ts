@@ -6,6 +6,8 @@ export const queryClient = new QueryClient({
       staleTime: 30_000,
       retry: 1,
       refetchOnWindowFocus: false,
+      // Al volver a una pantalla, consulta siempre de nuevo al backend aunque la caché siga fresca.
+      refetchOnMount: 'always',
     },
   },
 })

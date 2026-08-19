@@ -1,7 +1,7 @@
 import { FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material'
 import dayjs from 'dayjs'
 
-export type DatePeriod = 'todas'|'hoy'|'esta-semana'|'semana-pasada'|'este-mes'|'mes-pasado'|'este-ano'|'personalizado'
+export type DatePeriod = 'todas'|'ayer'|'hoy'|'esta-semana'|'semana-pasada'|'este-mes'|'mes-pasado'|'este-ano'|'personalizado'
 
 export interface DateRange { desde: string; hasta: string }
 
@@ -10,6 +10,7 @@ export function getDateRange(period: DatePeriod): DateRange {
   const fmt = (value: dayjs.Dayjs) => value.format('YYYY-MM-DD')
   const lunes = hoy.subtract((hoy.day() + 6) % 7, 'day')
   switch (period) {
+    case 'ayer': { const ayer = hoy.subtract(1, 'day'); return { desde: fmt(ayer), hasta: fmt(ayer) } }
     case 'hoy': return { desde: fmt(hoy), hasta: fmt(hoy) }
     case 'esta-semana': return { desde: fmt(lunes), hasta: fmt(lunes.add(6, 'day')) }
     case 'semana-pasada': return { desde: fmt(lunes.subtract(7, 'day')), hasta: fmt(lunes.subtract(1, 'day')) }
@@ -42,6 +43,7 @@ export function DatePeriodFilter({ period, desde, hasta, onChange, error = false
       <InputLabel>Periodo</InputLabel>
       <Select label="Periodo" value={period} onChange={event => setPeriod(event.target.value as DatePeriod)}>
         <MenuItem value="todas">Todas</MenuItem>
+        <MenuItem value="ayer">Ayer</MenuItem>
         <MenuItem value="hoy">Hoy</MenuItem>
         <MenuItem value="esta-semana">Esta semana</MenuItem>
         <MenuItem value="semana-pasada">Semana pasada</MenuItem>

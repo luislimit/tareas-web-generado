@@ -39,6 +39,8 @@ export interface CrudCreatePreset {
   disabledFields?:string[]
 }
 
+const EMPTY_SEARCH_FIELDS:string[]=[]
+
 function excelValue(value: unknown) {
   if (value == null) return ''
   if (typeof value === 'boolean') return value ? 'Sí' : 'No'
@@ -80,11 +82,12 @@ interface Props<T extends {id:number|string}> {
 
 export function MasterCrudPage<T extends {id:number|string}>({
   title, subtitle, singular, rows, loading, error, columns, fields, url, queryKey,
-  toForm, toPayload, toDuplicateForm, searchFields=[], filters, tableSummary, createPreset, rowActions, actionsWidth=132,
+  toForm, toPayload, toDuplicateForm, searchFields, filters, tableSummary, createPreset, rowActions, actionsWidth=132,
   headerActions, iconOnlyCreate=false, onExport, exportLabel, onFilteredRowsChange, adminToolbar=false, onClearFilters,
   secondaryFilters, dateField, initialDatePeriod='todas',
 }:Props<T>){
  const { currentUserId } = useCurrentUser()
+ const effectiveSearchFields=(searchFields??EMPTY_SEARCH_FIELDS) as (keyof T)[]
  const [selected,setSelected]=useState<T|null>(null)
  const [open,setOpen]=useState(false)
  const [duplicateMode,setDuplicateMode]=useState(false)
@@ -115,17 +118,26 @@ export function MasterCrudPage<T extends {id:number|string}>({
  })),[columns])
  const exportPrefix=queryKey.replace(/[^a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ]+/g,'_').replace(/^_+|_+$/g,'')||'datos'
  const hasActivo=adminToolbar && fields.some(field=>field.name==='activo')
- const effectiveRows=useMemo(()=>rows.filter(row=>{
-  if(hasActivo&&estadoFiltro!=='todos'&&Boolean((row as unknown as Record<string,unknown>).activo)!==(estadoFiltro==='activos'))return false
-  if(dateField&&datePeriod!=='todas'){
-   const value=(row as unknown as Record<string,unknown>)[String(dateField)]
-   if(!value)return false
-   const date=dayjs(String(value))
-   if(dateDesde&&date.isBefore(dayjs(dateDesde),'day'))return false
-   if(dateHasta&&date.isAfter(dayjs(dateHasta),'day'))return false
-  }
-  return true
- }),[rows,hasActivo,estadoFiltro,dateField,datePeriod,dateDesde,dateHasta])
+ const effectiveRows=useMemo(()=>{
+  const filtered=rows.filter(row=>{
+   if(hasActivo&&estadoFiltro!=='todos'&&Boolean((row as unknown as Record<string,unknown>).activo)!==(estadoFiltro==='activos'))return false
+   if(dateField&&datePeriod!=='todas'){
+    const value=(row as unknown as Record<string,unknown>)[String(dateField)]
+    if(!value)return false
+    const date=dayjs(String(value))
+    if(dateDesde&&date.isBefore(dayjs(dateDesde),'day'))return false
+    if(dateHasta&&date.isAfter(dayjs(dateHasta),'day'))return false
+   }
+   return true
+  })
+  const hasOrden=adminToolbar && columns.some(column=>column.field==='orden')
+  if(!hasOrden)return filtered
+  return [...filtered].sort((a,b)=>{
+   const av=Number((a as unknown as Record<string,unknown>).orden??0)
+   const bv=Number((b as unknown as Record<string,unknown>).orden??0)
+   return av-bv
+  })
+ },[rows,hasActivo,estadoFiltro,dateField,datePeriod,dateDesde,dateHasta,adminToolbar,columns])
  const exportAction=onExport??(()=>exportToExcel(exportPrefix,exportRowsRef.current,excelColumns))
  const handleFilteredRowsChange=useCallback((filtered:T[])=>{
   if(adminToolbar)exportRowsRef.current=filtered
@@ -189,6 +201,18 @@ export function MasterCrudPage<T extends {id:number|string}>({
  const set=(field:CrudField,value:unknown)=>setForm(v=>({...v,[field.name]:value,...(field.onChange?.(value,v)??{})}))
  const optionsOf=(field:CrudField)=>typeof field.options==='function'?field.options(form):(field.options??[])
  const disabledOf=(field:CrudField)=>presetDisabledFields.includes(field.name) || (typeof field.disabled==='function'?field.disabled(form):Boolean(field.disabled))
+ const handleRowClick=useCallback((row:T)=>setSelected(row),[])
+ const handleRowDoubleClick=useCallback((row:T)=>{
+  setDuplicateMode(false)
+  setSelected(row)
+  setPresetDisabledFields([])
+  setForm(toForm(row))
+  setOpen(true)
+ },[toForm])
+ const tableToolbar=useMemo(()=><>
+  {secondaryFilters}
+  {dateField&&<DatePeriodFilter period={datePeriod} desde={dateDesde} hasta={dateHasta} error={Boolean(dateDesde&&dateHasta&&dayjs(dateHasta).isBefore(dayjs(dateDesde),'day'))} onChange={(period,desde,hasta)=>{setDatePeriod(period);setDateDesde(desde);setDateHasta(hasta)}}/>}
+ </>,[secondaryFilters,dateField,datePeriod,dateDesde,dateHasta])
 
  return <Box>
   <PageHeader
@@ -221,12 +245,9 @@ export function MasterCrudPage<T extends {id:number|string}>({
     {hasActivo&&<FormControl size="small" sx={{minWidth:150}}><InputLabel>Estado</InputLabel><Select label="Estado" value={estadoFiltro} onChange={e=>setEstadoFiltro(e.target.value as 'activos'|'inactivos'|'todos')}><MenuItem value="activos">Activos</MenuItem><MenuItem value="inactivos">Inactivos</MenuItem><MenuItem value="todos">Todos</MenuItem></Select></FormControl>}
     {filters}
   </FilterBar>}
-  <ResourceTable preferenceKey={queryKey} preferenceUserId={currentUserId} rows={effectiveRows} columns={actionCols} loading={loading} error={error} searchFields={searchFields} searchPlaceholder="Buscar por textos..." summary={tableSummary} onFilteredRowsChange={handleFilteredRowsChange}
-   selectedRowId={selected?.id} onRowClick={row=>setSelected(row)} onRowDoubleClick={row=>edit(row)}
-   toolbar={<>
-    {secondaryFilters}
-    {dateField&&<DatePeriodFilter period={datePeriod} desde={dateDesde} hasta={dateHasta} error={Boolean(dateDesde&&dateHasta&&dayjs(dateHasta).isBefore(dayjs(dateDesde),'day'))} onChange={(period,desde,hasta)=>{setDatePeriod(period);setDateDesde(desde);setDateHasta(hasta)}}/>}
-   </>} />
+  <ResourceTable preferenceKey={queryKey} preferenceUserId={currentUserId} rows={effectiveRows} columns={actionCols} loading={loading} error={error} searchFields={effectiveSearchFields} searchPlaceholder="Buscar por textos..." summary={tableSummary} onFilteredRowsChange={handleFilteredRowsChange}
+   selectedRowId={selected?.id} onRowClick={handleRowClick} onRowDoubleClick={handleRowDoubleClick}
+   toolbar={tableToolbar} />
   <EntityDrawer open={open} title={duplicateMode?`Duplicar ${singular}`:selected?`Editar ${singular}`:`Nuevo ${singular}`} saving={saving} onClose={()=>setOpen(false)} onSave={save}>
    <Stack spacing={2} sx={{flex:1,minHeight:0}}>{fields.map(f=>f.type==='checkbox'?
     <FormControlLabel key={f.name} control={<Checkbox checked={Boolean(form[f.name])} disabled={disabledOf(f)} onChange={(_,v)=>set(f,v)}/>} label={f.label}/>

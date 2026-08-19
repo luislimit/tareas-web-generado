@@ -1,7 +1,7 @@
 import { Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import type { GridColDef } from '@mui/x-data-grid'
 import dayjs from 'dayjs'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { getHttpErrorMessage } from '../../../api/httpError'
 import { useResourceMutations } from '../../../api/useResourceMutations'
 import { useCurrentUser } from '../../../app/currentUser'
@@ -34,6 +34,7 @@ import { usePeticiones } from '../hooks/usePeticiones'
 import type { CambioEstadoRequest, Peticion, PeticionRequest } from '../types/peticion'
 
 const id = (v:number|string) => Number(v)
+const peticionSearchFields:(keyof Peticion)[]=['codigo','asunto','descripcion']
 const emptyForm:PeticionRequest={codigo:'',asunto:'',descripcion:'',categoriaId:'',subcategoriaId:'',usuarioId:'',estadoId:'',fechaInicioPrevista:'',fechaFinPrevista:'',fechaInicioReal:'',fechaFinReal:'',horasPrevistas:0,porcentaje:0,rutaDocumentos:'',activo:true}
 
 export function PeticionesPage(){
@@ -56,6 +57,8 @@ export function PeticionesPage(){
  const [periodoFecha,setPeriodoFecha]=useUserStoredState<DatePeriod>(currentUserId,'peticiones','periodoFecha','todas')
  const [desde,setDesde]=useUserStoredState<string>(currentUserId,'peticiones','fechaDesde','')
  const [hasta,setHasta]=useUserStoredState<string>(currentUserId,'peticiones','fechaHasta','')
+ const rangoPeriodoFecha=periodoFecha==='personalizado'?{desde,hasta}:getDateRange(periodoFecha)
+ const desdeFiltro=rangoPeriodoFecha.desde, hastaFiltro=rangoPeriodoFecha.hasta
  const [form,setForm]=useState<PeticionRequest>(emptyForm)
  const [change,setChange]=useState<CambioEstadoRequest>({estadoNuevoId:'',usuarioId:'',fechaCambio:dayjs().format('YYYY-MM-DDTHH:mm'),observaciones:''})
  const [editStateReasonOpen,setEditStateReasonOpen]=useState(false)
@@ -63,7 +66,7 @@ export function PeticionesPage(){
  const [quickImputacion,setQuickImputacion]=useState({fecha:dayjs().format('YYYY-MM-DD'),horas:0,extra:false,estadoHorasId:'',tipoHoraId:'',usuarioId:'',descripcion:''})
  const exportRowsRef=useRef<Peticion[]>([])
  const history=useHistorialPeticion(selected?.id,stateHistoryOpen)
- const estadosSeleccionados=estadosFiltro??(eq.data??[]).filter(e=>!e.estadoFinal).map(e=>String(e.id))
+ const estadosSeleccionados=useMemo(()=>estadosFiltro??(eq.data??[]).filter(e=>!e.estadoFinal).map(e=>String(e.id)),[estadosFiltro,eq.data])
  const subcategoriasFormulario=useMemo(()=>form.categoriaId?(sq.data??[]).filter(s=>String(s.categoriaId)===String(form.categoriaId)):[],[sq.data,form.categoriaId])
  const rows=useMemo(()=>(q.data??[]).filter(r=>{
   const c=(cq.data??[]).find(x=>String(x.id)===String(r.categoriaId))
@@ -75,11 +78,11 @@ export function PeticionesPage(){
   const f=String(r[campoFecha]??'')
   if(periodoFecha!=='todas'){
    if(!f)return false
-   if(desde&&dayjs(f).isBefore(dayjs(desde),'day'))return false
-   if(hasta&&dayjs(f).isAfter(dayjs(hasta),'day'))return false
+   if(desdeFiltro&&dayjs(f).isBefore(dayjs(desdeFiltro),'day'))return false
+   if(hastaFiltro&&dayjs(f).isAfter(dayjs(hastaFiltro),'day'))return false
   }
   return true
- }),[q.data,cq.data,sq.data,actividadFiltro,estadosSeleccionados,categoriasFiltro,subcategoriasFiltro,campoFecha,periodoFecha,desde,hasta])
+ }),[q.data,cq.data,sq.data,actividadFiltro,estadosSeleccionados,categoriasFiltro,subcategoriasFiltro,campoFecha,periodoFecha,desdeFiltro,hastaFiltro])
 
  function cambiaActividad(value:EstadoActividadFiltro){
   setActividadFiltro(value)
@@ -156,6 +159,10 @@ export function PeticionesPage(){
     <Tooltip title="Estado e historial"><IconButton size="small" color="secondary" onClick={(e)=>{e.stopPropagation();openStateHistory(row)}}><AppIcon name="history" fontSize="small" /></IconButton></Tooltip>
   </Stack>},
  ]
+ const tableColumns=useMemo(()=>columns,[cq.data,sq.data,eq.data,dq.data,iq.data,ehq.data,thq.data,currentUserId])
+ const handleFilteredRowsChange=useCallback((filtered:Peticion[])=>{exportRowsRef.current=filtered},[])
+ const handleTableRowClick=useCallback((row:Peticion)=>setSelected(row),[])
+ const handleTableRowDoubleClick=useCallback((row:Peticion)=>openEdit(row),[currentUserId,eq.data])
 
  function openStateHistory(row:Peticion){
   setSelected(row)
@@ -202,6 +209,22 @@ export function PeticionesPage(){
   setEditStateReason('')
   setEditOpen(false)
  }
+ function proponerSiguienteCodigo(){
+  const categoria=(cq.data??[]).find(c=>String(c.id)===String(form.categoriaId))
+  const subcategoria=(sq.data??[]).find(sc=>String(sc.id)===String(form.subcategoriaId))
+  if(!categoria?.codigo||!subcategoria?.codigo)return
+  const prefix=`${categoria.codigo}-${subcategoria.codigo}-`
+  let max=0
+  let width=3
+  for(const peticion of q.data??[]){
+   if(!peticion.codigo?.startsWith(prefix))continue
+   const suffix=peticion.codigo.slice(prefix.length)
+   if(!/^\d+$/.test(suffix))continue
+   max=Math.max(max,Number(suffix))
+   width=Math.max(width,suffix.length)
+  }
+  setForm(prev=>({...prev,codigo:`${prefix}${String(max+1).padStart(width,'0')}`}))
+ }
  async function save(){
   const payload={...form,categoriaId:id(form.categoriaId),subcategoriaId:id(form.subcategoriaId),usuarioId:id(form.usuarioId),estadoId:id(form.estadoId)}
   if(selected&&!duplicateMode){
@@ -224,6 +247,10 @@ export function PeticionesPage(){
   await history.refetch()
  }
  const err=m.createMutation.error||m.updateMutation.error||m.deleteMutation.error||m.changeMutation.error||imputacionMutations.createMutation.error
+ const tableToolbar=useMemo(()=><>
+  <FormControl size="small" sx={{minWidth:170}}><InputLabel>Fecha a filtrar</InputLabel><Select label="Fecha a filtrar" value={campoFecha} onChange={e=>setCampoFecha(e.target.value as keyof Peticion)}><MenuItem value="fechaAlta">Fecha alta</MenuItem><MenuItem value="fechaInicioPrevista">Inicio previsto</MenuItem><MenuItem value="fechaFinPrevista">Fin previsto</MenuItem><MenuItem value="fechaInicioReal">Inicio real</MenuItem><MenuItem value="fechaFinReal">Fin real</MenuItem></Select></FormControl>
+  <DatePeriodFilter period={periodoFecha} desde={desdeFiltro} hasta={hastaFiltro} error={Boolean(desdeFiltro&&hastaFiltro&&dayjs(hastaFiltro).isBefore(dayjs(desdeFiltro),'day'))} onChange={(period,from,to)=>{setPeriodoFecha(period);setDesde(from);setHasta(to)}}/>
+ </>,[campoFecha,periodoFecha,desdeFiltro,hastaFiltro])
 
  return <Box>
   <PageHeader title="Peticiones" subtitle="Seguimiento y planificación del trabajo" createLabel="Nueva petición" onCreate={()=>openEdit()} onDuplicate={()=>{if(selected)openDuplicate(selected)}} duplicateLabel="Duplicar petición" duplicateDisabled={!selected} onEdit={()=>{if(selected)openEdit(selected)}} editLabel="Editar petición" editDisabled={!selected} onDelete={()=>{if(selected)setDeleteOpen(true)}} deleteLabel="Eliminar petición" deleteDisabled={!selected} onExport={exportar} exportLabel="Exportar peticiones a Excel" onResetColumns={()=>resetStoredTableColumns(currentUserId, 'peticiones')} onClearFilters={limpiarFiltros}/>
@@ -238,18 +265,20 @@ export function PeticionesPage(){
     onEstadosPeticionChange={setEstadosFiltro}
    />
   </FilterBar>
-  <ResourceTable preferenceKey="peticiones" preferenceUserId={currentUserId} rows={rows} columns={columns} loading={q.isLoading} error={q.error} searchFields={['codigo','asunto','descripcion']} searchPlaceholder="Buscar por textos..." onFilteredRowsChange={filtered=>{exportRowsRef.current=filtered}}
-   selectedRowId={selected?.id} onRowClick={row=>setSelected(row)} onRowDoubleClick={row=>openEdit(row)}
-   toolbar={<>
-    <FormControl size="small" sx={{minWidth:170}}><InputLabel>Fecha a filtrar</InputLabel><Select label="Fecha a filtrar" value={campoFecha} onChange={e=>setCampoFecha(e.target.value as keyof Peticion)}><MenuItem value="fechaAlta">Fecha alta</MenuItem><MenuItem value="fechaInicioPrevista">Inicio previsto</MenuItem><MenuItem value="fechaFinPrevista">Fin previsto</MenuItem><MenuItem value="fechaInicioReal">Inicio real</MenuItem><MenuItem value="fechaFinReal">Fin real</MenuItem></Select></FormControl>
-    <DatePeriodFilter period={periodoFecha} desde={desde} hasta={hasta} error={Boolean(desde&&hasta&&dayjs(hasta).isBefore(dayjs(desde),'day'))} onChange={(period,from,to)=>{setPeriodoFecha(period);setDesde(from);setHasta(to)}}/>
-   </>} />
+  <ResourceTable preferenceKey="peticiones" preferenceUserId={currentUserId} rows={rows} columns={tableColumns} loading={q.isLoading} error={q.error} searchFields={peticionSearchFields} searchPlaceholder="Buscar por textos..." onFilteredRowsChange={handleFilteredRowsChange}
+   selectedRowId={selected?.id} onRowClick={handleTableRowClick} onRowDoubleClick={handleTableRowDoubleClick}
+   toolbar={tableToolbar} />
 
   <EntityDrawer open={editOpen} title={duplicateMode?'Duplicar petición':selected?'Editar petición':'Nueva petición'} saving={m.createMutation.isPending||m.updateMutation.isPending} onClose={()=>setEditOpen(false)} onSave={save}>
    <Stack spacing={2} sx={{flex:1,minHeight:0}}>
     <FormControl size="small" required><InputLabel>Categoría</InputLabel><Select label="Categoría" value={form.categoriaId} onChange={e=>setForm({...form,categoriaId:e.target.value,subcategoriaId:''})}>{(cq.data??[]).map(c=><MenuItem key={c.id} value={String(c.id)}>{c.codigo?`${c.codigo} - `:''}{c.nombre}</MenuItem>)}</Select></FormControl>
     <FormControl size="small" required disabled={!form.categoriaId}><InputLabel>Subcategoría</InputLabel><Select label="Subcategoría" value={form.subcategoriaId} onChange={e=>setForm({...form,subcategoriaId:e.target.value})}>{subcategoriasFormulario.map(s=><MenuItem key={s.id} value={String(s.id)}>{s.codigo?`${s.codigo} - `:''}{s.nombre}</MenuItem>)}</Select></FormControl>
-    <TextField size="small" label="Código" required value={form.codigo} onChange={e=>setForm({...form,codigo:e.target.value})}/>
+    <Stack direction="row" spacing={1} alignItems="center">
+     <TextField fullWidth size="small" label="Código" required value={form.codigo} onChange={e=>setForm({...form,codigo:e.target.value})}/>
+     <Tooltip title={form.categoriaId&&form.subcategoriaId?'Proponer siguiente código de petición':'Selecciona categoría y subcategoría'}>
+      <span><IconButton color="warning" disabled={!form.categoriaId||!form.subcategoriaId} onClick={proponerSiguienteCodigo} aria-label="Proponer siguiente código"><AppIcon name="idea"/></IconButton></span>
+     </Tooltip>
+    </Stack>
     <TextField size="small" label="Asunto" required value={form.asunto} onChange={e=>setForm({...form,asunto:e.target.value})}/>
     <ExpandingTextField label="Descripción" value={form.descripcion} onChange={descripcion=>setForm({...form,descripcion})}/>
     <FormControl size="small" required><InputLabel>Usuario</InputLabel><Select label="Usuario" value={form.usuarioId} onChange={e=>setForm({...form,usuarioId:e.target.value})}>{(uq.data??[]).map(u=><MenuItem key={u.id} value={String(u.id)}>{u.nombre}</MenuItem>)}</Select></FormControl>

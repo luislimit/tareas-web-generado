@@ -41,6 +41,8 @@ export function ImputacionesPage(){
  const [periodo,setPeriodo]=useUserStoredState<DatePeriod>(currentUserId,'imputaciones','periodoFecha','hoy')
  const [desde,setDesde]=useUserStoredState<string>(currentUserId,'imputaciones','fechaDesde',inicial.desde)
  const [hasta,setHasta]=useUserStoredState<string>(currentUserId,'imputaciones','fechaHasta',inicial.hasta)
+ const rangoPeriodo=periodo==='personalizado'?{desde,hasta}:getDateRange(periodo)
+ const desdeFiltro=rangoPeriodo.desde, hastaFiltro=rangoPeriodo.hasta
  const [docsImputacion,setDocsImputacion]=useState<Imputacion|null>(null)
  const estadosPeticionSeleccionados=estadosPeticionFiltro??(epq.data??[]).filter(e=>!e.estadoFinal).map(e=>String(e.id))
 
@@ -58,7 +60,7 @@ export function ImputacionesPage(){
  ]
 
 
- const rangoInvalido=Boolean(desde&&hasta&&dayjs(hasta).isBefore(dayjs(desde),'day'))
+ const rangoInvalido=Boolean(desdeFiltro&&hastaFiltro&&dayjs(hastaFiltro).isBefore(dayjs(desdeFiltro),'day'))
  const rows=useMemo(()=>{
   if(rangoInvalido)return []
   const peticiones=new Map((pq.data??[]).map(p=>[String(p.id),p]))
@@ -74,15 +76,15 @@ export function ImputacionesPage(){
    const fechaValor=String(r[campoFecha]??'')
    if(periodo!=='todas'){
     if(!fechaValor)return false
-    if(desde&&dayjs(fechaValor).isBefore(dayjs(desde),'day'))return false
-    if(hasta&&dayjs(fechaValor).isAfter(dayjs(hasta),'day'))return false
+    if(desdeFiltro&&dayjs(fechaValor).isBefore(dayjs(desdeFiltro),'day'))return false
+    if(hastaFiltro&&dayjs(fechaValor).isAfter(dayjs(hastaFiltro),'day'))return false
    }
    return true
   }).map(r=>{
    const p=peticiones.get(String(r.peticionId))
    return {...r,categoriaNombre:(cq.data??[]).find(c=>String(c.id)===String(p?.categoriaId))?.nombre??'',subcategoriaNombre:(sq.data??[]).find(sc=>String(sc.id)===String(p?.subcategoriaId))?.nombre??''}
   })
- },[q.data,pq.data,cq.data,sq.data,actividadFiltro,categoriasFiltro,subcategoriasFiltro,estadosPeticionSeleccionados,peticionesFiltro,campoFecha,periodo,desde,hasta,rangoInvalido])
+ },[q.data,pq.data,cq.data,sq.data,actividadFiltro,categoriasFiltro,subcategoriasFiltro,estadosPeticionSeleccionados,peticionesFiltro,campoFecha,periodo,desdeFiltro,hastaFiltro,rangoInvalido])
 
  function cambiaActividad(value:EstadoActividadFiltro){
   setActividadFiltro(value)
@@ -124,7 +126,7 @@ export function ImputacionesPage(){
 
  const secondaryFilters=<>
   <FormControl size="small" sx={{minWidth:170}}><InputLabel>Fecha a filtrar</InputLabel><Select label="Fecha a filtrar" value={campoFecha} onChange={e=>setCampoFecha(e.target.value as 'fecha'|'fechaAlta')}><MenuItem value="fecha">Fecha imputación</MenuItem><MenuItem value="fechaAlta">Fecha alta</MenuItem></Select></FormControl>
-  <DatePeriodFilter period={periodo} desde={desde} hasta={hasta} error={rangoInvalido} onChange={(period,from,to)=>{setPeriodo(period);setDesde(from);setHasta(to)}}/>
+  <DatePeriodFilter period={periodo} desde={desdeFiltro} hasta={hastaFiltro} error={rangoInvalido} onChange={(period,from,to)=>{setPeriodo(period);setDesde(from);setHasta(to)}}/>
   {rangoInvalido&&<Alert severity="error" sx={{py:0}}>La fecha hasta debe ser mayor o igual que la fecha desde.</Alert>}
  </>
 

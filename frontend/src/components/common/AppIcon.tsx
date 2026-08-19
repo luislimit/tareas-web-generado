@@ -6,7 +6,7 @@ export type AppIconName =
   | 'edit' | 'duplicate' | 'delete' | 'changeState' | 'history' | 'add' | 'close'
   | 'chevronLeft' | 'chevronRight' | 'chevronUp' | 'chevronDown'
   | 'pending' | 'inProgress' | 'calendarWeek' | 'calendarMonth' | 'warning' | 'user'
-  | 'addTime' | 'addDocument' | 'link' | 'info' | 'hourType' | 'export' | 'open' | 'excel' | 'newDocument' | 'resetColumns' | 'clearFilters' | 'documentEmpty' | 'documentFilled'
+  | 'addTime' | 'addDocument' | 'link' | 'info' | 'idea' | 'hourType' | 'export' | 'open' | 'excel' | 'newDocument' | 'resetColumns' | 'clearFilters' | 'documentEmpty' | 'documentFilled'
 
 interface Props extends SvgIconProps { name: AppIconName }
 
@@ -62,6 +62,8 @@ export function AppIcon({ name, ...props }: Props) {
       return <SvgIcon {...props}><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.4-3.4a4 4 0 0 1 5.7 5.7l-3.2 3.2a4 4 0 0 1-5.7 0l1.4-1.4a2 2 0 0 0 2.9 0l3.2-3.2a2 2 0 1 0-2.9-2.9L12 13.4a1 1 0 0 1-1.4 0Zm2.8-2.8a1 1 0 0 1 0 1.4L10 15.4a4 4 0 0 1-5.7-5.7l3.2-3.2a4 4 0 0 1 5.7 0l-1.4 1.4a2 2 0 0 0-2.9 0L5.7 11a2 2 0 1 0 2.9 2.9l3.4-3.4a1 1 0 0 1 1.4 0Z"/></SvgIcon>
     case 'info':
       return <SvgIcon {...props}><path d="M11 10h2v8h-2v-8Zm0-4h2v2h-2V6Zm1-4a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Z"/></SvgIcon>
+    case 'idea':
+      return <SvgIcon {...props}><path d="M9 21h6v-2H9v2Zm3-19a7 7 0 0 0-4.2 12.6c.8.6 1.2 1.2 1.2 2.4h6c0-1.2.4-1.8 1.2-2.4A7 7 0 0 0 12 2Zm3 11c-1.1.8-1.7 1.8-1.9 3h-2.2c-.2-1.2-.8-2.2-1.9-3A5 5 0 1 1 15 13Z"/></SvgIcon>
     case 'hourType':
       return <SvgIcon {...props}><path d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h8v2H8V8Zm0 4h5v2H8v-2Zm7 0h2v4h-2v-4Zm-7 4h5v2H8v-2Z"/></SvgIcon>
     case 'export':

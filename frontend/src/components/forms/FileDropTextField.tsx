@@ -55,7 +55,7 @@ export interface FileDropTextFieldProps extends Omit<TextFieldProps, 'onChange' 
 export function FileDropTextField({
   value,
   onValueChange,
-  helperText = 'Arrastre aquí un fichero. Se usará la ruta completa cuando el navegador la facilite.',
+  helperText = 'Para indicar la ruta completa: en el Explorador de Windows use Shift + clic derecho → Copiar como ruta y después Ctrl+V en este campo.',
   ...props
 }: FileDropTextFieldProps) {
   const [dragging, setDragging] = useState(false)

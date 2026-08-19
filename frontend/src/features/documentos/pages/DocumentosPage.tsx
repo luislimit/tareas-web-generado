@@ -40,6 +40,8 @@ export function DocumentosPage(){
  const [periodo,setPeriodo]=useUserStoredState<DatePeriod>(currentUserId,'documentos','periodoFecha','todas')
  const [desde,setDesde]=useUserStoredState<string>(currentUserId,'documentos','fechaDesde','')
  const [hasta,setHasta]=useUserStoredState<string>(currentUserId,'documentos','fechaHasta','')
+ const rangoPeriodo=periodo==='personalizado'?{desde,hasta}:getDateRange(periodo)
+ const desdeFiltro=rangoPeriodo.desde, hastaFiltro=rangoPeriodo.hasta
  const [imputacionInfo,setImputacionInfo]=useState<Imputacion|null>(null)
  const exportRowsRef=useRef<Documento[]>([])
 
@@ -57,7 +59,7 @@ export function DocumentosPage(){
 
 
  const rows=useMemo(()=>{
-  if(desde&&hasta&&dayjs(hasta).isBefore(dayjs(desde),'day'))return []
+  if(desdeFiltro&&hastaFiltro&&dayjs(hastaFiltro).isBefore(dayjs(desdeFiltro),'day'))return []
   const peticiones=new Map((pq.data??[]).map(p=>[String(p.id),p]))
   return (q.data??[]).filter(r=>{
    const p=peticiones.get(String(r.peticionId))
@@ -70,15 +72,15 @@ export function DocumentosPage(){
    if(peticionesFiltro.length&&!peticionesFiltro.includes(String(r.peticionId)))return false
    if(periodo!=='todas'){
     if(!r.fechaAlta)return false
-    if(desde&&dayjs(r.fechaAlta).isBefore(dayjs(desde),'day'))return false
-    if(hasta&&dayjs(r.fechaAlta).isAfter(dayjs(hasta),'day'))return false
+    if(desdeFiltro&&dayjs(r.fechaAlta).isBefore(dayjs(desdeFiltro),'day'))return false
+    if(hastaFiltro&&dayjs(r.fechaAlta).isAfter(dayjs(hastaFiltro),'day'))return false
    }
    return true
   }).map(r=>{
    const p=peticiones.get(String(r.peticionId))
    return {...r,categoriaNombre:(cq.data??[]).find(c=>String(c.id)===String(p?.categoriaId))?.nombre??'',subcategoriaNombre:(sq.data??[]).find(sc=>String(sc.id)===String(p?.subcategoriaId))?.nombre??''}
   })
- },[q.data,pq.data,cq.data,sq.data,actividadFiltro,categoriasFiltro,subcategoriasFiltro,estadosPeticionSeleccionados,peticionesFiltro,periodo,desde,hasta])
+ },[q.data,pq.data,cq.data,sq.data,actividadFiltro,categoriasFiltro,subcategoriasFiltro,estadosPeticionSeleccionados,peticionesFiltro,periodo,desdeFiltro,hastaFiltro])
  function cambiaActividad(value:EstadoActividadFiltro){
   setActividadFiltro(value)
   setCategoriasFiltro([])
@@ -129,8 +131,8 @@ export function DocumentosPage(){
   onEstadoChange={cambiaActividad} onCategoriasChange={cambiaCategorias} onSubcategoriasChange={cambiaSubcategorias}
   onEstadosPeticionChange={cambiaEstadosPeticion} onPeticionesChange={setPeticionesFiltro}
  />
- const rangoInvalido=Boolean(desde&&hasta&&dayjs(hasta).isBefore(dayjs(desde),'day'))
- const secondaryFilters=<DatePeriodFilter period={periodo} desde={desde} hasta={hasta} error={rangoInvalido} onChange={(period,from,to)=>{setPeriodo(period);setDesde(from);setHasta(to)}}/>
+ const rangoInvalido=Boolean(desdeFiltro&&hastaFiltro&&dayjs(hastaFiltro).isBefore(dayjs(desdeFiltro),'day'))
+ const secondaryFilters=<DatePeriodFilter period={periodo} desde={desdeFiltro} hasta={hastaFiltro} error={rangoInvalido} onChange={(period,from,to)=>{setPeriodo(period);setDesde(from);setHasta(to)}}/>
 
  return <>
   <MasterCrudPage<Documento>
