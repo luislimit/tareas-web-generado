@@ -118,26 +118,17 @@ export function MasterCrudPage<T extends {id:number|string}>({
  })),[columns])
  const exportPrefix=queryKey.replace(/[^a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ]+/g,'_').replace(/^_+|_+$/g,'')||'datos'
  const hasActivo=adminToolbar && fields.some(field=>field.name==='activo')
- const effectiveRows=useMemo(()=>{
-  const filtered=rows.filter(row=>{
-   if(hasActivo&&estadoFiltro!=='todos'&&Boolean((row as unknown as Record<string,unknown>).activo)!==(estadoFiltro==='activos'))return false
-   if(dateField&&datePeriod!=='todas'){
-    const value=(row as unknown as Record<string,unknown>)[String(dateField)]
-    if(!value)return false
-    const date=dayjs(String(value))
-    if(dateDesde&&date.isBefore(dayjs(dateDesde),'day'))return false
-    if(dateHasta&&date.isAfter(dayjs(dateHasta),'day'))return false
-   }
-   return true
-  })
-  const hasOrden=adminToolbar && columns.some(column=>column.field==='orden')
-  if(!hasOrden)return filtered
-  return [...filtered].sort((a,b)=>{
-   const av=Number((a as unknown as Record<string,unknown>).orden??0)
-   const bv=Number((b as unknown as Record<string,unknown>).orden??0)
-   return av-bv
-  })
- },[rows,hasActivo,estadoFiltro,dateField,datePeriod,dateDesde,dateHasta,adminToolbar,columns])
+ const effectiveRows=useMemo(()=>rows.filter(row=>{
+  if(hasActivo&&estadoFiltro!=='todos'&&Boolean((row as unknown as Record<string,unknown>).activo)!==(estadoFiltro==='activos'))return false
+  if(dateField&&datePeriod!=='todas'){
+   const value=(row as unknown as Record<string,unknown>)[String(dateField)]
+   if(!value)return false
+   const date=dayjs(String(value))
+   if(dateDesde&&date.isBefore(dayjs(dateDesde),'day'))return false
+   if(dateHasta&&date.isAfter(dayjs(dateHasta),'day'))return false
+  }
+  return true
+ }),[rows,hasActivo,estadoFiltro,dateField,datePeriod,dateDesde,dateHasta])
  const exportAction=onExport??(()=>exportToExcel(exportPrefix,exportRowsRef.current,excelColumns))
  const handleFilteredRowsChange=useCallback((filtered:T[])=>{
   if(adminToolbar)exportRowsRef.current=filtered
@@ -248,7 +239,7 @@ export function MasterCrudPage<T extends {id:number|string}>({
   <ResourceTable preferenceKey={queryKey} preferenceUserId={currentUserId} rows={effectiveRows} columns={actionCols} loading={loading} error={error} searchFields={effectiveSearchFields} searchPlaceholder="Buscar por textos..." summary={tableSummary} onFilteredRowsChange={handleFilteredRowsChange}
    selectedRowId={selected?.id} onRowClick={handleRowClick} onRowDoubleClick={handleRowDoubleClick}
    toolbar={tableToolbar} />
-  <EntityDrawer open={open} title={duplicateMode?`Duplicar ${singular}`:selected?`Editar ${singular}`:`Nuevo ${singular}`} saving={saving} onClose={()=>setOpen(false)} onSave={save}>
+  <EntityDrawer open={open} title={duplicateMode?`Duplicar ${singular}`:selected?`Editar ${singular}`:`Nuevo ${singular}`} saveLabel={duplicateMode||!selected?'Crear':'Actualizar'} saving={saving} onClose={()=>setOpen(false)} onSave={save}>
    <Stack spacing={2} sx={{flex:1,minHeight:0}}>{fields.map(f=>f.type==='checkbox'?
     <FormControlLabel key={f.name} control={<Checkbox checked={Boolean(form[f.name])} disabled={disabledOf(f)} onChange={(_,v)=>set(f,v)}/>} label={f.label}/>
     :f.type==='select'?

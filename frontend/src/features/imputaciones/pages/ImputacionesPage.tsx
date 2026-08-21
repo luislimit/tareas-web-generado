@@ -157,6 +157,10 @@ export function ImputacionesPage(){
    const peticion=(pq.data??[]).find(p=>String(p.id)===String(r?.peticionId??''))
    return {categoriaId:peticion?.categoriaId??'',subcategoriaId:peticion?.subcategoriaId??'',peticionId:r?.peticionId??'',usuarioId:r?.usuarioId??currentUserId,fecha:r?.fecha??dayjs().format('YYYY-MM-DD'),horas:r?.horas??0,extra:r?.extra??false,estadoHorasId:r?.estadoHorasId??'',tipoHoraId:r?.tipoHoraId??'',descripcion:r?.descripcion??peticion?.asunto??''}
   }}
+  toDuplicateForm={r=>{
+   const peticion=(pq.data??[]).find(p=>String(p.id)===String(r.peticionId))
+   return {categoriaId:peticion?.categoriaId??'',subcategoriaId:peticion?.subcategoriaId??'',peticionId:r.peticionId,usuarioId:r.usuarioId??currentUserId,fecha:dayjs().format('YYYY-MM-DD'),horas:r.horas??0,extra:r.extra??false,estadoHorasId:r.estadoHorasId??'',tipoHoraId:r.tipoHoraId??'',descripcion:r.descripcion??peticion?.asunto??''}
+  }}
   toPayload={f=>({peticionId:Number(f.peticionId),usuarioId:Number(f.usuarioId),fecha:f.fecha,horas:Number(f.horas),extra:Boolean(f.extra),estadoHorasId:Number(f.estadoHorasId),tipoHoraId:f.tipoHoraId===''?null:Number(f.tipoHoraId),descripcion:f.descripcion})}
  />
 

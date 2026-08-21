@@ -269,7 +269,7 @@ export function PeticionesPage(){
    selectedRowId={selected?.id} onRowClick={handleTableRowClick} onRowDoubleClick={handleTableRowDoubleClick}
    toolbar={tableToolbar} />
 
-  <EntityDrawer open={editOpen} title={duplicateMode?'Duplicar petición':selected?'Editar petición':'Nueva petición'} saving={m.createMutation.isPending||m.updateMutation.isPending} onClose={()=>setEditOpen(false)} onSave={save}>
+  <EntityDrawer open={editOpen} title={duplicateMode?'Duplicar petición':selected?'Editar petición':'Nueva petición'} saveLabel={duplicateMode||!selected?'Crear':'Actualizar'} saving={m.createMutation.isPending||m.updateMutation.isPending} onClose={()=>setEditOpen(false)} onSave={save}>
    <Stack spacing={2} sx={{flex:1,minHeight:0}}>
     <FormControl size="small" required><InputLabel>Categoría</InputLabel><Select label="Categoría" value={form.categoriaId} onChange={e=>setForm({...form,categoriaId:e.target.value,subcategoriaId:''})}>{(cq.data??[]).map(c=><MenuItem key={c.id} value={String(c.id)}>{c.codigo?`${c.codigo} - `:''}{c.nombre}</MenuItem>)}</Select></FormControl>
     <FormControl size="small" required disabled={!form.categoriaId}><InputLabel>Subcategoría</InputLabel><Select label="Subcategoría" value={form.subcategoriaId} onChange={e=>setForm({...form,subcategoriaId:e.target.value})}>{subcategoriasFormulario.map(s=><MenuItem key={s.id} value={String(s.id)}>{s.codigo?`${s.codigo} - `:''}{s.nombre}</MenuItem>)}</Select></FormControl>
