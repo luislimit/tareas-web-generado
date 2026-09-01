@@ -108,7 +108,7 @@ export function MasterCrudPage<T extends {id:number|string}>({
   ...columns,
   {
     field:'acciones', headerName:'Acciones', width:actionsWidth, sortable:false, filterable:false,
-    renderCell:({row})=><Stack direction="row" spacing={.25}>{rowActions(row)}</Stack>,
+    renderCell:({row})=><Stack direction="row" spacing={.25} onClickCapture={()=>setSelected(row)}>{rowActions(row)}</Stack>,
   },
  ]:columns, [columns, rowActions, actionsWidth])
 
@@ -239,7 +239,7 @@ export function MasterCrudPage<T extends {id:number|string}>({
   <ResourceTable preferenceKey={queryKey} preferenceUserId={currentUserId} rows={effectiveRows} columns={actionCols} loading={loading} error={error} searchFields={effectiveSearchFields} searchPlaceholder="Buscar por textos..." summary={tableSummary} onFilteredRowsChange={handleFilteredRowsChange}
    selectedRowId={selected?.id} onRowClick={handleRowClick} onRowDoubleClick={handleRowDoubleClick}
    toolbar={tableToolbar} />
-  <EntityDrawer open={open} title={duplicateMode?`Duplicar ${singular}`:selected?`Editar ${singular}`:`Nuevo ${singular}`} saveLabel={duplicateMode||!selected?'Crear':'Actualizar'} saving={saving} onClose={()=>setOpen(false)} onSave={save}>
+  <EntityDrawer open={open} title={duplicateMode?`Duplicar ${singular}`:selected?`Editar ${singular}`:`Nuevo ${singular}`} saving={saving} saveLabel={selected&&!duplicateMode?'Modificar':'Crear'} duplicateMode={duplicateMode} onClose={()=>setOpen(false)} onSave={save}>
    <Stack spacing={2} sx={{flex:1,minHeight:0}}>{fields.map(f=>f.type==='checkbox'?
     <FormControlLabel key={f.name} control={<Checkbox checked={Boolean(form[f.name])} disabled={disabledOf(f)} onChange={(_,v)=>set(f,v)}/>} label={f.label}/>
     :f.type==='select'?

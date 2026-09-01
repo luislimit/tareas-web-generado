@@ -19,6 +19,7 @@
     "@tanstack/react-query": "latest",
     "axios": "latest",
     "dayjs": "latest",
+    "exceljs": "^4.4.0",
     "react": "latest",
     "react-dom": "latest",
     "react-hook-form": "latest",

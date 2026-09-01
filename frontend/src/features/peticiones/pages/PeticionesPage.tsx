@@ -153,7 +153,7 @@ export function PeticionesPage(){
   {field:'horasPrevistas',headerName:'H. prev.',width:90,valueFormatter:formatHours},
   {field:'horasReales',headerName:'H. reales',width:90,valueFormatter:formatHours},
   {field:'porcentaje',headerName:'%',width:75},
-  {field:'acciones',headerName:'Acciones',width:130,sortable:false,renderCell:({row})=><Stack direction="row" spacing={.25}>
+  {field:'acciones',headerName:'Acciones',width:130,sortable:false,renderCell:({row})=><Stack direction="row" spacing={.25} onClickCapture={()=>setSelected(row)}>
     <Tooltip title="Nueva imputación"><IconButton size="small" color="primary" onClick={(e)=>{e.stopPropagation();openQuickImputacion(row)}}><AppIcon name="addTime" fontSize="small" /></IconButton></Tooltip>
     <Tooltip title={(dq.data??[]).some(d=>String(d.peticionId)===String(row.id))?`Documentos vinculados (${(dq.data??[]).filter(d=>String(d.peticionId)===String(row.id)).length})`:'Sin documentos vinculados'}><IconButton size="small" onClick={(e)=>{e.stopPropagation();setDocsPeticion(row)}}><AppIcon name={(dq.data??[]).some(d=>String(d.peticionId)===String(row.id))?'documentFilled':'documentEmpty'} fontSize="small" color={(dq.data??[]).some(d=>String(d.peticionId)===String(row.id))?'primary':'action'} /></IconButton></Tooltip>
     <Tooltip title="Estado e historial"><IconButton size="small" color="secondary" onClick={(e)=>{e.stopPropagation();openStateHistory(row)}}><AppIcon name="history" fontSize="small" /></IconButton></Tooltip>
@@ -269,7 +269,7 @@ export function PeticionesPage(){
    selectedRowId={selected?.id} onRowClick={handleTableRowClick} onRowDoubleClick={handleTableRowDoubleClick}
    toolbar={tableToolbar} />
 
-  <EntityDrawer open={editOpen} title={duplicateMode?'Duplicar petición':selected?'Editar petición':'Nueva petición'} saveLabel={duplicateMode||!selected?'Crear':'Actualizar'} saving={m.createMutation.isPending||m.updateMutation.isPending} onClose={()=>setEditOpen(false)} onSave={save}>
+  <EntityDrawer open={editOpen} title={duplicateMode?'Duplicar petición':selected?'Editar petición':'Nueva petición'} saving={m.createMutation.isPending||m.updateMutation.isPending} saveLabel={selected&&!duplicateMode?'Modificar':'Crear'} duplicateMode={duplicateMode} onClose={()=>setEditOpen(false)} onSave={save}>
    <Stack spacing={2} sx={{flex:1,minHeight:0}}>
     <FormControl size="small" required><InputLabel>Categoría</InputLabel><Select label="Categoría" value={form.categoriaId} onChange={e=>setForm({...form,categoriaId:e.target.value,subcategoriaId:''})}>{(cq.data??[]).map(c=><MenuItem key={c.id} value={String(c.id)}>{c.codigo?`${c.codigo} - `:''}{c.nombre}</MenuItem>)}</Select></FormControl>
     <FormControl size="small" required disabled={!form.categoriaId}><InputLabel>Subcategoría</InputLabel><Select label="Subcategoría" value={form.subcategoriaId} onChange={e=>setForm({...form,subcategoriaId:e.target.value})}>{subcategoriasFormulario.map(s=><MenuItem key={s.id} value={String(s.id)}>{s.codigo?`${s.codigo} - `:''}{s.nombre}</MenuItem>)}</Select></FormControl>
@@ -314,7 +314,7 @@ export function PeticionesPage(){
    </Stack>
   </EntityDrawer>
 
-  <EntityDrawer open={quickImputacionOpen} title={`Nueva imputación${selected?` · ${selected.codigo}`:''}`} saving={imputacionMutations.createMutation.isPending} onClose={()=>setQuickImputacionOpen(false)} onSave={saveQuickImputacion}>
+  <EntityDrawer open={quickImputacionOpen} title={`Nueva imputación${selected?` · ${selected.codigo}`:''}`} saving={imputacionMutations.createMutation.isPending} saveLabel="Crear" onClose={()=>setQuickImputacionOpen(false)} onSave={saveQuickImputacion}>
    <Stack spacing={2}>
     <TextField size="small" label="Categoría" value={(cq.data??[]).find(c=>String(c.id)===String(selected?.categoriaId))?.nombre??''} disabled/>
     <TextField size="small" label="Subcategoría" value={(sq.data??[]).find(sc=>String(sc.id)===String(selected?.subcategoriaId))?.nombre??''} disabled/>

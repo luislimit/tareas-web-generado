@@ -1,5 +1,5 @@
 import { Alert, Box, Paper } from '@mui/material'
-import { DataGrid, type GridColDef, type GridFilterModel, type GridRowParams, type GridValidRowModel } from '@mui/x-data-grid'
+import { DataGrid, gridFilteredSortedRowIdsSelector, type GridColDef, type GridFilterModel, type GridRowParams, type GridValidRowModel, useGridApiRef } from '@mui/x-data-grid'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { FilterBar } from '../filters/FilterBar'
@@ -74,6 +74,7 @@ function ResourceTableImpl<T extends GridValidRowModel>({
   onRowDoubleClick,
 }: ResourceTableProps<T>) {
   const storageKey = prefKey(preferenceUserId, preferenceKey)
+  const apiRef = useGridApiRef()
   const [prefs, setPrefs] = useState<TablePreferences>({ density: 'compact' })
 
   useEffect(() => {
@@ -119,14 +120,26 @@ function ResourceTableImpl<T extends GridValidRowModel>({
   }, [rows, search, searchFields])
 
   const lastNotifiedRows = useRef<T[]>([])
-  useEffect(() => {
+  const notifyGridFilteredRows = () => {
     if (!onFilteredRowsChange) return
+    let visibleRows = filteredRows
+    try {
+      const ids = gridFilteredSortedRowIdsSelector(apiRef)
+      const byId = new Map(filteredRows.map(row => [String(getRowId ? getRowId(row) : row.id), row]))
+      visibleRows = ids.map(id => byId.get(String(id))).filter((row): row is T => Boolean(row))
+    } catch {
+      // Before DataGrid initializes, the external/text-filtered rows are the best available set.
+    }
     const previous = lastNotifiedRows.current
-    const unchanged = previous.length === filteredRows.length && previous.every((row, index) => row === filteredRows[index])
+    const unchanged = previous.length === visibleRows.length && previous.every((row, index) => row === visibleRows[index])
     if (unchanged) return
-    lastNotifiedRows.current = filteredRows
-    onFilteredRowsChange(filteredRows)
-  }, [filteredRows, onFilteredRowsChange])
+    lastNotifiedRows.current = visibleRows
+    onFilteredRowsChange(visibleRows)
+  }
+
+  useEffect(() => {
+    notifyGridFilteredRows()
+  }, [filteredRows, prefs.filterModel, onFilteredRowsChange])
 
   const configuredColumns = useMemo(() => {
     const byField = new Map(columns.map(column => [column.field, column]))
@@ -145,6 +158,7 @@ function ResourceTableImpl<T extends GridValidRowModel>({
       {summary && <Box sx={{ mb: 1.25 }}>{summary(filteredRows)}</Box>}
       <Paper variant="outlined" sx={{ height: 'calc(100vh - 190px)', minHeight: 430, overflow: 'hidden' }}>
         <DataGrid
+          apiRef={apiRef}
           rows={filteredRows}
           columns={configuredColumns}
           loading={loading}
@@ -156,7 +170,10 @@ function ResourceTableImpl<T extends GridValidRowModel>({
           density={prefs.density ?? 'compact'}
           onDensityChange={(density) => savePrefs({ density })}
           filterModel={prefs.filterModel ?? { items: [] }}
-          onFilterModelChange={(filterModel) => savePrefs({ filterModel })}
+          onFilterModelChange={(filterModel) => {
+            savePrefs({ filterModel })
+            queueMicrotask(notifyGridFilteredRows)
+          }}
           columnVisibilityModel={prefs.visibility ?? {}}
           onColumnVisibilityModelChange={(visibility) => savePrefs({ visibility })}
           onColumnWidthChange={(params) => savePrefs({ widths: { ...(prefs.widths ?? {}), [params.colDef.field]: params.width } })}

@@ -52,7 +52,7 @@ export function DocumentosPage(){
   {field:'peticionCodigo',headerName:'Petición',width:150,renderCell:({row})=>{const p=(pq.data??[]).find(x=>String(x.id)===String(row.peticionId));return <Tooltip title={p?.asunto??''}><Box component="span">{row.peticionCodigo??p?.codigo??''}</Box></Tooltip>}},
   {field:'nombre',headerName:'Fichero',minWidth:300,flex:1},
   {field:'tipoDocumentoNombre',headerName:'Tipo',width:150},
-  {field:'vinculo',headerName:'Horas',width:76,sortable:false,filterable:false,renderCell:({row})=>row.imputacionId?<Tooltip title="Vinculado a una imputación. Ver detalle"><IconButton size="small" color="primary" onClick={e=>{e.stopPropagation();setImputacionInfo((iq.data??[]).find(i=>String(i.id)===String(row.imputacionId))??null)}}><AppIcon name="link" fontSize="small"/></IconButton></Tooltip>:null},
+  {field:'vinculo',headerName:'Horas',width:76,sortable:false,filterable:false,renderCell:({row})=>row.imputacionId?<Tooltip title="Vinculado a una imputación. Ver detalle"><IconButton size="small" color="primary" onClick={()=>setImputacionInfo((iq.data??[]).find(i=>String(i.id)===String(row.imputacionId))??null)}><AppIcon name="link" fontSize="small"/></IconButton></Tooltip>:null},
   {field:'usuarioNombre',headerName:'Usuario',width:140},
   {field:'fechaAlta',headerName:'Fecha alta',width:115,valueFormatter:v=>formatDate(v)}
  ]
